@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SESUZPORT — All in One Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+/* ═══════════════════════════════════════════════════════════════
+   SESUZPORT — Main Stylesheet
+   Design: Clean governmental-tech, Blue + Green palette
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── Variables ── */
+:root {
+  --blue:        #1a5f7a;
+  --blue-light:  #2980b9;
+  --blue-pale:   #e8f4f8;
+  --green:       #27ae60;
+  --green-light: #2ecc71;
+  --green-pale:  #e8f8f0;
+  --red:         #e74c3c;
+  --red-pale:    #fde8e8;
+  --orange:      #e67e22;
+  --orange-pale: #fef3cd;
+  --dark:        #0f1923;
+  --dark-2:      #1c2a35;
+  --text:        #2c3e50;
+  --text-2:      #5a6a7a;
+  --muted:       #95a5a6;
+  --border:      #dde3e8;
+  --bg:          #f4f7fa;
+  --white:       #ffffff;
+  --shadow:      0 2px 12px rgba(0,0,0,0.08);
+  --shadow-md:   0 4px 24px rgba(0,0,0,0.12);
+  --radius:      10px;
+  --radius-lg:   16px;
+  --font:        'Space Grotesk', sans-serif;
+  --mono:        'DM Mono', monospace;
+  --transition:  0.2s ease;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+a { color: var(--blue); text-decoration: none; }
+a:hover { color: var(--blue-light); }
+img { max-width: 100%; display: block; }
+
+/* ── Utility ── */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.mono { font-family: var(--mono); }
+.text-muted { color: var(--muted); }
+.gradient-text {
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ════════════════════ NAVBAR ════════════════════ */
+.navbar {
+  background: var(--dark);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.logo-shield { font-size: 22px; }
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+.logo-accent { color: var(--green-light); }
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 4px;
+  flex: 1;
+}
+.nav-link {
+  color: rgba(255,255,255,0.65);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.nav-link:hover, .nav-link.active {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+}
+.btn-nav-cta {
+  background: var(--green);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.btn-nav-cta:hover { background: var(--green-light); color: #fff; }
+.nav-burger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 6px; }
+.nav-burger span { display: block; width: 22px; height: 2px; background: rgba(255,255,255,0.7); border-radius: 2px; }
+.nav-drawer {
+  display: none;
+  flex-direction: column;
+  background: var(--dark-2);
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.nav-drawer a { color: rgba(255,255,255,0.8); padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; }
+.nav-drawer.open { display: flex; }
+
+/* ════════════════════ BUTTONS ════════════════════ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-light));
+  color: #fff;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(26,95,122,0.4); color: #fff; }
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--blue);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--blue);
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.btn-outline:hover { background: var(--blue-pale); color: var(--blue); }
+.btn-lg { font-size: 15px; padding: 13px 28px; }
+.btn-sm { font-size: 13px; padding: 7px 14px; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-submit { width: 100%; justify-content: center; font-size: 15px; padding: 14px; }
+
+/* ════════════════════ BADGES ════════════════════ */
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-family: var(--font);
+}
+.badge-pending   { background: #fff3cd; color: #856404; }
+.badge-resolved  { background: var(--green-pale); color: #155724; }
+.badge-escalated { background: var(--red-pale); color: #721c24; }
+.badge-rejected  { background: #f8f9fa; color: #6c757d; border: 1px solid var(--border); }
+.badge-expired   { background: var(--red-pale); color: var(--red); }
+.badge-unsafe    { background: var(--orange-pale); color: var(--orange); }
+.badge-valid     { background: var(--green-pale); color: var(--green); }
+.badge-unknown   { background: #f0f0f0; color: #666; }
+
+/* ════════════════════ MAIN CONTENT ════════════════════ */
+.main-content { flex: 1; }
+
+/* ════════════════════ HERO ════════════════════ */
+.hero {
+  background: var(--dark);
+  position: relative;
+  overflow: hidden;
+  padding: 80px 24px 100px;
+}
+.hero-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(46,204,113,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46,204,113,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(26,95,122,0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+.hero-badge {
+  display: inline-block;
+  background: rgba(46,204,113,0.12);
+  border: 1px solid rgba(46,204,113,0.3);
+  color: var(--green-light);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+}
+.hero-title {
+  font-size: clamp(36px, 5vw, 58px);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+  letter-spacing: -1.5px;
+  margin-bottom: 20px;
+}
+.hero-sub {
+  font-size: 17px;
+  color: rgba(255,255,255,0.65);
+  max-width: 520px;
+  margin: 0 auto 36px;
+  line-height: 1.7;
+}
+.hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.trust-badges {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.trust-badge {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.75);
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
+/* ════════════════════ STATS ════════════════════ */
+.stats-section { padding: 60px 0; background: var(--white); }
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.stat-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  text-align: center;
+  transition: var(--transition);
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.stat-icon { font-size: 28px; margin-bottom: 12px; }
+.stat-num { font-size: 36px; font-weight: 700; color: var(--blue); letter-spacing: -1px; }
+.stat-label { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+.stat-pending  .stat-num { color: var(--orange); }
+.stat-resolved .stat-num { color: var(--green); }
+.stat-escalated .stat-num { color: var(--red); }
+
+/* ════════════════════ HOW IT WORKS ════════════════════ */
+.how-section { padding: 80px 0; background: var(--bg); }
+.section-header { text-align: center; margin-bottom: 48px; }
+.section-header h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+.section-header p { color: var(--text-2); font-size: 16px; }
+.steps-grid {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  justify-content: center;
+}
+.step-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 28px;
+  text-align: center;
+  flex: 1;
+  max-width: 300px;
+  position: relative;
+}
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--green);
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+.step-icon { font-size: 36px; margin-bottom: 16px; }
+.step-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+.step-card p { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+.step-arrow { font-size: 24px; color: var(--muted); padding: 0 12px; flex-shrink: 0; }
+
+/* ════════════════════ RECENT ════════════════════ */
+.recent-section { padding: 60px 0; background: var(--white); }
+.recent-list { display: flex; flex-direction: column; gap: 1px; }
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  transition: var(--transition);
+  margin-bottom: 4px;
+}
+.recent-item:hover { background: var(--blue-pale); transform: translateX(4px); }
+.recent-img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; }
+.recent-img-wrap { flex-shrink: 0; }
+.recent-img-placeholder { width: 48px; height: 48px; border-radius: 8px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.recent-info { flex: 1; }
+.recent-name { font-weight: 600; font-size: 14px; }
+.recent-org { font-size: 12px; color: var(--muted); }
+.recent-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.recent-date { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.link-arrow { color: var(--blue); font-weight: 600; font-size: 14px; }
+.link-arrow:hover { text-decoration: underline; }
+
+/* ════════════════════ CTA SECTION ════════════════════ */
+.cta-section { padding: 60px 0; background: var(--bg); }
+.cta-card {
+  background: linear-gradient(135deg, var(--dark), var(--dark-2));
+  border-radius: var(--radius-lg);
+  padding: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.cta-text h2 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
+.cta-text p { color: rgba(255,255,255,0.65); font-size: 15px; }
+
+/* ════════════════════ PAGE HEADER ════════════════════ */
+.page-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 0;
+  margin-bottom: 32px;
+}
+.page-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.page-breadcrumb { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.page-breadcrumb a { color: var(--muted); }
+.page-breadcrumb a:hover { color: var(--blue); }
+.page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+.page-sub { color: var(--text-2); font-size: 14px; margin-top: 4px; }
+
+/* ════════════════════ FORM ════════════════════ */
+.form-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 28px;
+  padding-bottom: 60px;
+  align-items: start;
+}
+.form-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px;
+}
+.form-group { margin-bottom: 24px; }
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.form-label.required::after { content: ' *'; color: var(--red); }
+.optional-tag { color: var(--muted); font-weight: 400; font-size: 13px; }
+.form-input, input[type="text"], input[type="email"], textarea, select {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  transition: var(--transition);
+  outline: none;
+}
+.form-input:focus, input:focus, textarea:focus {
+  border-color: var(--blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(26,95,122,0.1);
+}
+.form-textarea { resize: vertical; min-height: 100px; }
+textarea { resize: vertical; min-height: 100px; }
+.field-error { color: var(--red); font-size: 12px; margin-top: 5px; }
+.field-hint { color: var(--muted); font-size: 12px; margin-top: 5px; }
+.char-counter { text-align: right; font-size: 12px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+.form-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  background: var(--bg);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--blue);
+  background: var(--blue-pale);
+}
+.upload-zone.has-image { padding: 0; background: transparent; border-style: solid; border-color: var(--green); }
+.upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.upload-icon { font-size: 40px; margin-bottom: 12px; }
+.upload-text { font-size: 15px; color: var(--text-2); }
+.upload-browse { color: var(--blue); font-weight: 600; }
+.upload-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.upload-preview { position: relative; border-radius: var(--radius-lg); overflow: hidden; }
+.upload-preview img { width: 100%; max-height: 280px; object-fit: cover; display: block; }
+.upload-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Input with action */
+.input-with-action { display: flex; gap: 8px; }
+.input-with-action .form-input { flex: 1; }
+.btn-lookup {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.btn-lookup:hover { background: var(--blue-pale); border-color: var(--blue); }
+.lookup-result { margin-top: 8px; font-size: 13px; }
+.lookup-found {
+  background: var(--green-pale);
+  border: 1px solid rgba(39,174,96,0.3);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  color: #155724;
+}
+.lookup-found strong { display: block; margin-bottom: 4px; }
+.lookup-detail { color: var(--text-2); font-size: 12px; margin-top: 4px; }
+.lookup-notfound {
+  background: var(--orange-pale);
+  border: 1px solid rgba(230,126,34,0.3);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  color: #856404;
+}
+
+/* Sidebar cards */
+.form-sidebar { display: flex; flex-direction: column; gap: 16px; }
+.sidebar-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.sidebar-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.sidebar-card-warn { border-color: rgba(230,126,34,0.4); background: var(--orange-pale); }
+.sidebar-card-warn h3, .sidebar-card-warn p { color: #7d4e00; }
+.sidebar-card-info { border-color: rgba(26,95,122,0.3); background: var(--blue-pale); }
+.sidebar-card-info h3, .sidebar-card-info p { color: var(--dark); }
+.info-list { padding-left: 18px; font-size: 13px; color: var(--text-2); }
+.info-list li { margin-bottom: 6px; line-height: 1.5; }
+.ai-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+/* ════════════════════ SUCCESS PAGE ════════════════════ */
+.success-page { padding: 60px 24px; }
+.success-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 48px;
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+.success-anim { margin-bottom: 28px; }
+.success-circle {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+.check-svg { width: 80px; height: 80px; }
+.check-circle {
+  stroke: var(--green);
+  stroke-width: 2;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: circle-stroke 0.6s ease forwards;
+}
+.check-tick {
+  stroke: var(--green);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: tick-stroke 0.4s 0.5s ease forwards;
+}
+@keyframes circle-stroke { to { stroke-dashoffset: 0; } }
+@keyframes tick-stroke    { to { stroke-dashoffset: 0; } }
+.success-title { font-size: 28px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.5px; }
+.success-sub { color: var(--text-2); margin-bottom: 32px; }
+.success-summary {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-label { font-size: 13px; color: var(--muted); }
+.summary-val { font-size: 14px; font-weight: 500; text-align: right; }
+.timeline { text-align: left; margin-bottom: 28px; }
+.timeline-step {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  position: relative;
+}
+.tl-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.timeline-step.done .tl-dot { background: var(--green); color: #fff; }
+.timeline-step.escalated .tl-dot { background: var(--red); color: #fff; }
+.tl-content strong { display: block; font-size: 14px; }
+.tl-content span { font-size: 12px; color: var(--muted); }
+.success-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* ════════════════════ DASHBOARD ════════════════════ */
+.filter-bar {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+.filter-form { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1; min-width: 200px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; }
+.search-input {
+  width: 100%;
+  padding: 9px 14px 9px 36px;
+  font-family: var(--font);
+  font-size: 14px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+}
+.search-input:focus { border-color: var(--blue); background: var(--white); }
+.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+  text-decoration: none;
+}
+.pill:hover { border-color: var(--blue); color: var(--blue); }
+.pill-active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.pill-pending.pill-active   { background: var(--orange); border-color: var(--orange); }
+.pill-resolved.pill-active  { background: var(--green); border-color: var(--green); }
+.pill-escalated.pill-active { background: var(--red); border-color: var(--red); }
+
+.table-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+  margin-bottom: 20px;
+}
+.complaints-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.complaints-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  white-space: nowrap;
+}
+.complaints-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table-row:last-child td { border-bottom: none; }
+.table-row:hover { background: var(--blue-pale); }
+.table-thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+.table-thumb-empty { width: 44px; height: 44px; border-radius: 8px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid var(--border); }
+.table-product { font-weight: 500; }
+.table-org a { color: var(--blue); font-weight: 500; }
+.table-link { color: var(--blue); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.email-dot { font-size: 16px; }
+.email-sent { color: var(--green); }
+.email-pending { color: var(--muted); }
+.pagination { display: flex; align-items: center; gap: 12px; justify-content: center; padding: 20px 0; }
+.page-btn {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  transition: var(--transition);
+}
+.page-btn:hover { background: var(--blue-pale); border-color: var(--blue); color: var(--blue); }
+.page-info { font-size: 13px; color: var(--muted); font-family: var(--mono); }
+.empty-state { text-align: center; padding: 80px 24px; }
+.empty-icon { font-size: 56px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.empty-state p { color: var(--text-2); margin-bottom: 24px; }
+
+/* ════════════════════ DETAIL PAGE ════════════════════ */
+.detail-layout { display: grid; grid-template-columns: 1fr 320px; gap: 28px; padding-bottom: 60px; align-items: start; }
+.detail-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding: 28px; border-bottom: 1px solid var(--border); }
+.detail-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.detail-org { font-size: 14px; color: var(--text-2); margin-top: 6px; }
+.detail-org a { color: var(--blue); }
+.detail-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.detail-image-wrap { padding: 0; }
+.detail-image { width: 100%; max-height: 400px; object-fit: cover; }
+.detail-section { padding: 24px 28px; border-top: 1px solid var(--border); }
+.detail-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.detail-desc { color: var(--text-2); line-height: 1.7; }
+.detail-admin-note { background: #fffbf0; }
+.meta-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+.meta-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+.meta-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 16px; }
+.meta-row:last-child { border-bottom: none; }
+.meta-row span:first-child { color: var(--muted); }
+.meta-row span:last-child { font-weight: 500; text-align: right; }
+.sidebar-actions { display: flex; flex-direction: column; gap: 10px; }
+.org-mini strong { display: block; font-size: 15px; margin-bottom: 8px; }
+.org-mini-row { font-size: 13px; color: var(--text-2); margin-bottom: 4px; }
+.org-rating-mini { font-size: 14px; font-weight: 600; color: var(--orange); margin: 8px 0; }
+.escalated-tag { background: var(--red-pale); color: var(--red); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 8px; }
+
+/* ════════════════════ ORGANIZATIONS ════════════════════ */
+.orgs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding-bottom: 60px; }
+.org-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-decoration: none;
+  color: var(--text);
+  transition: var(--transition);
+  display: block;
+}
+.org-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); color: var(--text); }
+.org-card.org-escalated { border-color: rgba(231,76,60,0.4); background: var(--red-pale); }
+.org-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 16px; }
+.org-name { font-size: 16px; font-weight: 600; }
+.escalated-badge { background: var(--red); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+.rating-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.rating-stars { display: flex; gap: 2px; }
+.star { font-size: 16px; color: var(--border); }
+.star.star-on { color: var(--orange); }
+.rating-num { font-size: 14px; font-weight: 600; color: var(--text-2); }
+.org-stats { display: flex; gap: 8px; margin-bottom: 12px; }
+.org-stat { flex: 1; text-align: center; background: var(--bg); border-radius: 8px; padding: 8px; }
+.org-stat-num { font-size: 20px; font-weight: 700; color: var(--blue); }
+.org-stat-resolved { color: var(--green); }
+.org-stat-danger { color: var(--red); }
+.org-stat-label { font-size: 11px; color: var(--muted); }
+.org-email { font-size: 12px; color: var(--muted); }
+.org-rating-display { display: flex; align-items: center; gap: 16px; padding: 20px 28px; border-bottom: 1px solid var(--border); }
+.rating-num-big { font-size: 48px; font-weight: 700; color: var(--orange); letter-spacing: -2px; }
+.rating-outof { font-size: 18px; color: var(--muted); }
+.rating-stars-big { display: flex; gap: 4px; }
+.star-big { font-size: 28px; color: var(--border); }
+.star-big.star-on { color: var(--orange); }
+.stats-grid-sm { display: flex; gap: 12px; padding: 20px 28px; border-bottom: 1px solid var(--border); }
+.stat-card-sm { flex: 1; background: var(--bg); border-radius: var(--radius); padding: 16px; text-align: center; }
+.stat-num-sm { font-size: 28px; font-weight: 700; color: var(--blue); }
+.stat-label-sm { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.stat-resolved .stat-num-sm { color: var(--green); }
+.stat-danger .stat-num-sm { color: var(--red); }
+.complaint-mini-list { display: flex; flex-direction: column; gap: 4px; }
+.complaint-mini {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--text);
+  transition: var(--transition);
+}
+.complaint-mini:hover { background: var(--blue-pale); }
+.complaint-mini .mono { min-width: 40px; }
+
+/* ════════════════════ MESSAGES ════════════════════ */
+.messages-container { position: fixed; top: 72px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+.message {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 14px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  animation: slideIn 0.3s ease;
+}
+.message-success { border-left: 4px solid var(--green); }
+.message-error   { border-left: 4px solid var(--red); }
+.message-warning { border-left: 4px solid var(--orange); }
+.msg-close { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--muted); flex-shrink: 0; }
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ════════════════════ FOOTER ════════════════════ */
+.footer { background: var(--dark); border-top: 1px solid rgba(255,255,255,0.06); padding: 48px 24px; margin-top: auto; }
+.footer-inner { max-width: 1200px; margin: 0 auto; display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; }
+.footer-brand { flex: 1; }
+.footer-brand .logo-shield { font-size: 28px; margin-bottom: 6px; }
+.footer-brand strong { color: #fff; font-size: 18px; }
+.footer-brand p { color: rgba(255,255,255,0.45); font-size: 13px; margin-top: 6px; }
+.footer-links { display: flex; flex-direction: column; gap: 8px; }
+.footer-links a { color: rgba(255,255,255,0.55); font-size: 14px; transition: var(--transition); }
+.footer-links a:hover { color: #fff; }
+.footer-copy { color: rgba(255,255,255,0.3); font-size: 13px; line-height: 1.8; }
+.footer-copy .mono { font-size: 11px; }
+
+/* ════════════════════ RESPONSIVE ════════════════════ */
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-layout, .detail-layout { grid-template-columns: 1fr; }
+  .steps-grid { flex-direction: column; align-items: stretch; }
+  .step-arrow { transform: rotate(90deg); text-align: center; }
+  .cta-card { flex-direction: column; text-align: center; }
+}
+@media (max-width: 640px) {
+  .nav-links, .btn-nav-cta { display: none; }
+  .nav-burger { display: flex; }
+  .hero { padding: 56px 24px 72px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .orgs-grid { grid-template-columns: 1fr; }
+  .filter-form { flex-direction: column; align-items: stretch; }
+  .complaints-table { font-size: 13px; }
+  .form-card { padding: 24px; }
+  .success-card { padding: 28px 20px; }
+}
+/* single-file additions */
+html { scroll-padding-top: 84px; }
+body { background: var(--bg); }
+.demo-note { background: var(--blue-pale); color: var(--dark); border-bottom:1px solid var(--border); padding:10px 24px; font-size:13px; text-align:center; }
+.section-anchor { scroll-margin-top: 84px; }
+.footer { margin-top: 60px; background: var(--dark); color: rgba(255,255,255,0.7); }
+.footer-inner { max-width: 1200px; margin: 0 auto; padding: 32px 24px; display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:24px; align-items:start; }
+.footer-links { display:flex; flex-direction:column; gap:10px; }
+.footer-links a { color: rgba(255,255,255,0.78); }
+.footer-links a:hover { color: white; }
+.footer-copy { font-size:13px; line-height:1.7; }
+.messages-container { position:fixed; top:82px; right:20px; display:flex; flex-direction:column; gap:10px; z-index:120; }
+.message { min-width:260px; background:white; border:1px solid var(--border); border-left:4px solid var(--green); box-shadow: var(--shadow-md); border-radius:12px; padding:12px 40px 12px 14px; position:relative; }
+.msg-close { position:absolute; right:10px; top:8px; background:none; border:none; font-size:18px; cursor:pointer; color:var(--muted); }
+.orgs-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; padding-bottom: 60px; }
+.org-card { background: var(--white); border:1px solid var(--border); border-radius: var(--radius-lg); padding:24px; text-decoration:none; color:var(--text); transition: var(--transition); box-shadow: var(--shadow); }
+.org-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.org-escalated { border-color: rgba(231,76,60,0.35); }
+.org-card-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:18px; }
+.org-name { font-size:18px; font-weight:700; line-height:1.35; }
+.escalated-badge { background: var(--red-pale); color: var(--red); font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+.rating-wrap { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.rating-stars, .rating-stars-big { color:#d5dce3; letter-spacing:1px; }
+.star-on { color:#f5b301; }
+.rating-num { font-family: var(--mono); font-size:14px; color:var(--text-2); }
+.org-stats { display:grid; grid-template-columns: repeat(3,1fr); gap:10px; }
+.org-stat { background: var(--bg); border:1px solid var(--border); border-radius: 12px; padding:12px; text-align:center; }
+.org-stat-num { font-size:22px; font-weight:700; color:var(--blue); }
+.org-stat-resolved { color: var(--green); }
+.org-stat-danger { color: var(--red); }
+.org-stat-label { font-size:12px; color:var(--text-2); margin-top:4px; }
+.org-email { margin-top:16px; font-size:13px; color:var(--text-2); }
+.org-rating-display { padding: 28px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:18px; }
+.rating-big { display:flex; align-items:baseline; gap:6px; }
+.rating-num-big { font-size:44px; font-weight:700; color: var(--blue); letter-spacing:-1px; }
+.rating-outof { color: var(--muted); }
+.star-big { font-size:28px; color:#d5dce3; }
+.stats-grid-sm { display:grid; grid-template-columns: repeat(3,1fr); gap:14px; padding: 28px; }
+.stat-card-sm { background: var(--bg); border:1px solid var(--border); border-radius: 14px; padding:18px; text-align:center; }
+.stat-num-sm { font-size:26px; font-weight:700; color: var(--blue); }
+.stat-danger .stat-num-sm { color: var(--red); }
+.stat-label-sm { margin-top:4px; font-size:12px; color:var(--text-2); }
+.detail-main, .detail-sidebar { min-width:0; }
+.detail-section { padding: 24px 28px; border-top:1px solid var(--border); }
+.detail-section h3 { font-size:16px; margin-bottom:12px; }
+.detail-desc { color:var(--text-2); line-height:1.8; white-space:pre-wrap; }
+.detail-admin-note { background: var(--blue-pale); }
+.detail-badges { display:flex; gap:8px; flex-wrap:wrap; }
+.detail-image-wrap { padding: 28px; border-top:1px solid var(--border); }
+.detail-image { width:100%; max-height:420px; object-fit:cover; border-radius: 16px; border:1px solid var(--border); }
+.meta-card { background: var(--white); border:1px solid var(--border); border-radius: var(--radius-lg); padding:20px; margin-bottom:16px; }
+.meta-card h3 { font-size:15px; margin-bottom:14px; }
+.meta-row { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; }
+.meta-row:last-child { border-bottom:none; }
+.org-mini { font-size:14px; color:var(--text-2); }
+.org-mini strong { display:block; color:var(--text); margin-bottom:8px; }
+.org-mini-row { margin:6px 0; }
+.org-rating-mini { margin-top:10px; font-weight:600; color: var(--blue); }
+.escalated-tag { margin-top:10px; display:inline-block; background: var(--red-pale); color: var(--red); border-radius:20px; padding:4px 10px; font-size:12px; font-weight:700; }
+.sidebar-actions { display:flex; flex-direction:column; gap:10px; }
+.complaint-mini-list { display:flex; flex-direction:column; gap:10px; }
+.complaint-mini { display:grid; grid-template-columns: 70px 1fr auto auto; gap:12px; align-items:center; background: var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 14px; text-decoration:none; color:var(--text); }
+.success-page .container { max-width: 900px; }
+#submit-demo .form-card, #submit-demo .form-sidebar .sidebar-card, .table-card, .detail-card, .meta-card, .org-card, .success-card { box-shadow: var(--shadow); }
+@media (max-width: 1024px) {
+  .stats-grid, .orgs-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-layout, .detail-layout { grid-template-columns: 1fr; }
+  .footer-inner { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .nav-links, .btn-nav-cta { display:none; }
+  .nav-burger { display:flex; margin-left:auto; }
+  .stats-grid, .orgs-grid, .stats-grid-sm { grid-template-columns: 1fr; }
+  .steps-grid { flex-direction:column; }
+  .step-arrow { transform: rotate(90deg); padding: 8px 0; }
+  .complaint-mini { grid-template-columns: 1fr; }
+  .summary-row, .meta-row { flex-direction:column; align-items:flex-start; }
+}
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="#home" class="nav-logo">
+        <span class="logo-shield">🛡️</span>
+        <span class="logo-text">SESUZ<span class="logo-accent">PORT</span></span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#home" class="nav-link">Bosh sahifa</a></li>
+        <li><a href="#submit-demo" class="nav-link">Shikoyat yuborish</a></li>
+        <li><a href="#dashboard-demo" class="nav-link">Dashboard</a></li>
+        <li><a href="#organizations-demo" class="nav-link">Tashkilotlar</a></li>
+      </ul>
+      <a href="#submit-demo" class="btn-nav-cta">+ Shikoyat</a>
+      <button class="nav-burger" id="navBurger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+  <div class="nav-drawer" id="navDrawer">
+    <a href="#home">Bosh sahifa</a>
+    <a href="#submit-demo">Shikoyat yuborish</a>
+    <a href="#dashboard-demo">Dashboard</a>
+    <a href="#organizations-demo">Tashkilotlar</a>
+  </div>
+
+  <div class="messages-container">
+    <div class="message">Demo fayl muvaffaqiyatli tayyorlandi.<button class="msg-close" onclick="this.parentElement.remove()">×</button></div>
+  </div>
+
+  <main class="main-content">
+    <section class="hero section-anchor" id="home">
+      <div class="hero-bg-grid"></div>
+      <div class="hero-inner">
+        <div class="hero-badge">🔬 AI-powered nazorat tizimi</div>
+        <h1 class="hero-title">Xavfli mahsulotni<br><span class="gradient-text">ko'rdingizmi?</span></h1>
+        <p class="hero-sub">SESUZPORT orqali bir daqiqada shikoyat yuboring — tizim avtomatik ravishda mas'ul tashkilotni aniqlaydi va xabar yuboradi.</p>
+        <div class="hero-actions">
+          <a href="#submit-demo" class="btn-primary btn-lg">📸 Shikoyat yuborish</a>
+          <a href="#dashboard-demo" class="btn-outline btn-lg">📊 Shikoyatlarni ko'rish</a>
+        </div>
+        <div class="trust-badges">
+          <div class="trust-badge">✅ Avtomatik email</div>
+          <div class="trust-badge">🔍 AI tahlil</div>
+          <div class="trust-badge">⚡ Tezkor javob</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-section">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-num">248</div><div class="stat-label">Jami shikoyatlar</div></div>
+          <div class="stat-card stat-pending"><div class="stat-icon">⏳</div><div class="stat-num">37</div><div class="stat-label">Ko'rib chiqilmoqda</div></div>
+          <div class="stat-card stat-resolved"><div class="stat-icon">✅</div><div class="stat-num">181</div><div class="stat-label">Hal qilingan</div></div>
+          <div class="stat-card stat-escalated"><div class="stat-icon">🚨</div><div class="stat-num">30</div><div class="stat-label">SESga yuborilgan</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="how-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>Qanday ishlaydi?</h2>
+          <p>3 ta oddiy qadam</p>
+        </div>
+        <div class="steps-grid">
+          <div class="step-card"><div class="step-num">01</div><div class="step-icon">📸</div><h3>Rasm yuboring</h3><p>Muddati o'tgan yoki xavfli mahsulot rasmini yuklang va qisqacha tavsif qo'shing.</p></div>
+          <div class="step-arrow">→</div>
+          <div class="step-card"><div class="step-num">02</div><div class="step-icon">🔍</div><h3>AI tahlil qiladi</h3><p>Tizim mahsulot holatini avtomatik aniqlaydi va mas'ul tashkilotni topadi.</p></div>
+          <div class="step-arrow">→</div>
+          <div class="step-card"><div class="step-num">03</div><div class="step-icon">📧</div><h3>Xabar yuboriladi</h3><p>Tashkilotga avtomatik email yuboriladi. Agar javob bo'lmasa, SES nazoratiga o'tadi.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="recent-section">
+      <div class="container">
+        <div class="section-header">
+          <h2>So'nggi shikoyatlar</h2>
+          <a href="#dashboard-demo" class="link-arrow">Barchasini ko'rish →</a>
+        </div>
+        <div class="recent-list">
+          <a href="#detail-demo" class="recent-item"><div class="recent-img-wrap"><div class="recent-img-placeholder">📦</div></div><div class="recent-info"><div class="recent-name">Qatiq 1L</div><div class="recent-org">Fresh Market Group</div></div><div class="recent-meta"><span class="badge badge-pending">Ko'rib chiqilmoqda</span><span class="recent-date">25.03.2026</span></div></a>
+          <a href="#detail-demo" class="recent-item"><div class="recent-img-wrap"><div class="recent-img-placeholder">🥫</div></div><div class="recent-info"><div class="recent-name">Konserva mahsuloti</div><div class="recent-org">Quality Food Trade LLC</div></div><div class="recent-meta"><span class="badge badge-resolved">Hal qilingan</span><span class="recent-date">24.03.2026</span></div></a>
+          <a href="#detail-demo" class="recent-item"><div class="recent-img-wrap"><div class="recent-img-placeholder">🍪</div></div><div class="recent-info"><div class="recent-name">Bolalar pechenyesi</div><div class="recent-org">Natural Supply Co.</div></div><div class="recent-meta"><span class="badge badge-escalated">SESga yuborilgan</span><span class="recent-date">23.03.2026</span></div></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="container"><div class="cta-card"><div class="cta-text"><h2>Xavfli mahsulot ko'rdingizmi?</h2><p>Shikoyatingizni hoziroq yuboring — bu boshqalarni himoya qiladi</p></div><a href="#submit-demo" class="btn-primary btn-lg">Shikoyat yuborish →</a></div></div>
+    </section>
+
+    <section class="section-anchor" id="submit-demo">
+      <div class="page-header"><div class="container"><div class="page-header-inner"><div><div class="page-breadcrumb"><a href="#home">Bosh sahifa</a> / Shikoyat yuborish</div><h1 class="page-title">📸 Shikoyat yuborish</h1><p class="page-sub">Mahsulot rasmini yuboring — tizim avtomatik ishlaydi</p></div></div></div></div>
+      <div class="container">
+        <div class="form-layout">
+          <div class="form-card">
+            <form id="complaintForm" novalidate>
+              <div class="form-group">
+                <label class="form-label required">Mahsulot rasmi</label>
+                <div class="upload-zone" id="uploadZone">
+                  <input type="file" id="image-upload" accept="image/*" class="upload-input">
+                  <div class="upload-placeholder" id="uploadPlaceholder"><div class="upload-icon">📷</div><div class="upload-text">Rasmni bu yerga tashlang yoki <span class="upload-browse">tanlang</span></div><div class="upload-hint">JPG, PNG, WEBP · Max 10MB</div></div>
+                  <div class="upload-preview" id="uploadPreview" style="display:none"><img id="previewImg" src="" alt="Preview"><button type="button" class="upload-remove" id="removeImg">✕</button></div>
+                </div>
+              </div>
+              <div class="form-group"><label class="form-label required">Mahsulot nomi</label><input type="text" class="form-input" value="Qatiq 1L"></div>
+              <div class="form-group"><label class="form-label required">Ishlab chiqaruvchi nomi</label><div class="input-with-action"><input type="text" id="company-name-input" class="form-input" value="Fresh Market Group"><button type="button" class="btn-lookup" id="lookupBtn" title="Tashkilotni qidirish">🔍</button></div><div class="lookup-result" id="lookupResult" style="display:none"></div><div class="field-hint">Tashkilot nomi org.info tizimi bilan tekshiriladi</div></div>
+              <div class="form-group"><label class="form-label">Tavsif <span class="optional-tag">(ixtiyoriy)</span></label><textarea name="description">Mahsulotning yaroqlilik muddati tugagan, lekin hali sotuvda turibdi.</textarea><div class="char-counter"><span id="charCount">66</span> / 500</div></div>
+              <div class="form-actions"><button type="submit" class="btn-primary btn-submit" id="submitBtn"><span class="btn-text">📤 Shikoyat yuborish</span><span class="btn-loading" style="display:none">⏳ Yuborilmoqda...</span></button><a href="#home" class="btn-outline">Bekor qilish</a></div>
+            </form>
+          </div>
+          <div class="form-sidebar">
+            <div class="sidebar-card"><h3>ℹ️ Eslatma</h3><ul class="info-list"><li>Mahsulot rasmi <strong>aniq</strong> bo'lishi kerak</li><li>Muddati yoki shtrix-kodni ko'rsatishga harakat qiling</li><li>Tashkilot nomi avtomatik aniqlanadi</li><li>Email <strong>5 daqiqa</strong> ichida yuboriladi</li></ul></div>
+            <div class="sidebar-card sidebar-card-warn"><h3>⚡ Eskalatsiya</h3><p>Agar bitta tashkilotga <strong>5 dan ortiq</strong> shikoyat tushadigan bo'lsa, SES nazoratiga avtomatik yuboriladi.</p></div>
+            <div class="sidebar-card sidebar-card-info"><h3>🔍 AI Tahlil</h3><p>Tizim mahsulot holatini avtomatik aniqlaydi:</p><div class="ai-badges"><span class="badge badge-expired">Muddati o'tgan</span><span class="badge badge-unsafe">Xavfli</span><span class="badge badge-valid">Yaroqli</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-anchor" id="success-demo">
+      <div class="success-page">
+        <div class="container">
+          <div class="success-card">
+            <div class="success-anim"><div class="success-circle"><svg viewBox="0 0 52 52" class="check-svg"><circle class="check-circle" cx="26" cy="26" r="25" fill="none"/><path class="check-tick" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg></div></div>
+            <h1 class="success-title">Shikoyat yuborildi! 🎉</h1>
+            <p class="success-sub">Shikoyatingiz muvaffaqiyatli qabul qilindi va ishlov berilmoqda</p>
+            <div class="success-summary">
+              <div class="summary-row"><span class="summary-label">Shikoyat №</span><span class="summary-val mono">#248</span></div>
+              <div class="summary-row"><span class="summary-label">Mahsulot</span><span class="summary-val">Qatiq 1L</span></div>
+              <div class="summary-row"><span class="summary-label">Tashkilot</span><span class="summary-val">Fresh Market Group</span></div>
+              <div class="summary-row"><span class="summary-label">AI tahlil natijasi</span><span class="summary-val"><span class="badge badge-expired">Muddati o'tgan</span></span></div>
+              <div class="summary-row"><span class="summary-label">Holat</span><span class="summary-val"><span class="badge badge-pending">Ko'rib chiqilmoqda</span></span></div>
+              <div class="summary-row"><span class="summary-label">Email yuborildi</span><span class="summary-val">✅ Ha — info@freshmarket.uz</span></div>
+            </div>
+            <div class="timeline">
+              <div class="timeline-step done"><div class="tl-dot">✓</div><div class="tl-content"><strong>Shikoyat qabul qilindi</strong><span>25.03.2026 16:10</span></div></div>
+              <div class="timeline-step done"><div class="tl-dot">✓</div><div class="tl-content"><strong>Email yuborildi</strong><span>Muvaffaqiyatli</span></div></div>
+              <div class="timeline-step pending"><div class="tl-dot">○</div><div class="tl-content"><strong>Ko'rib chiqish</strong><span>Tashkilot javobi kutilmoqda</span></div></div>
+            </div>
+            <div class="success-actions"><a href="#detail-demo" class="btn-outline">📄 Shikoyatni ko'rish</a><a href="#submit-demo" class="btn-primary">+ Yangi shikoyat</a><a href="#dashboard-demo" class="btn-outline">📊 Dashboard</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-anchor" id="dashboard-demo">
+      <div class="page-header"><div class="container"><div class="page-header-inner"><div><div class="page-breadcrumb"><a href="#home">Bosh sahifa</a> / Dashboard</div><h1 class="page-title">📊 Shikoyatlar Dashboardi</h1><p class="page-sub">Jami 248 ta shikoyat</p></div><a href="#submit-demo" class="btn-primary">+ Shikoyat yuborish</a></div></div></div>
+      <div class="container">
+        <div class="filter-bar"><form class="filter-form" id="filterForm"><div class="search-wrap"><span class="search-icon">🔍</span><input type="text" value="" placeholder="Mahsulot yoki tashkilot nomi..." class="search-input"></div><div class="filter-pills"><a href="#dashboard-demo" class="pill pill-active">Barchasi</a><a href="#dashboard-demo" class="pill pill-pending">Ko'rib chiqilmoqda</a><a href="#dashboard-demo" class="pill pill-resolved">Hal qilingan</a><a href="#dashboard-demo" class="pill pill-escalated">SESga yuborilgan</a></div><button type="submit" class="btn-outline btn-sm">Qidirish</button></form></div>
+        <div class="table-card">
+          <table class="complaints-table">
+            <thead><tr><th>#</th><th>Rasm</th><th>Mahsulot</th><th>Tashkilot</th><th>AI Tahlil</th><th>Holat</th><th>Email</th><th>Sana</th><th></th></tr></thead>
+            <tbody>
+              <tr class="table-row"><td class="mono text-muted">#248</td><td><div class="table-thumb-empty">📦</div></td><td><div class="table-product">Qatiq 1L</div></td><td><div class="table-org"><a href="#organization-detail-demo" class="table-link">Fresh Market Group</a></div></td><td><span class="badge badge-expired">Muddati o'tgan</span></td><td><span class="badge badge-pending">Ko'rib chiqilmoqda</span></td><td><span class="email-dot email-sent">✓</span></td><td class="text-muted mono">25.03.2026</td><td><a href="#detail-demo" class="table-link">Ko'rish →</a></td></tr>
+              <tr class="table-row"><td class="mono text-muted">#247</td><td><div class="table-thumb-empty">🥫</div></td><td><div class="table-product">Konserva mahsuloti</div></td><td><div class="table-org"><a href="#organization-detail-demo" class="table-link">Quality Food Trade LLC</a></div></td><td><span class="badge badge-valid">Yaroqli</span></td><td><span class="badge badge-resolved">Hal qilingan</span></td><td><span class="email-dot email-sent">✓</span></td><td class="text-muted mono">24.03.2026</td><td><a href="#detail-demo" class="table-link">Ko'rish →</a></td></tr>
+              <tr class="table-row"><td class="mono text-muted">#246</td><td><div class="table-thumb-empty">🍪</div></td><td><div class="table-product">Bolalar pechenyesi</div></td><td><div class="table-org"><a href="#organization-detail-demo" class="table-link">Natural Supply Co.</a></div></td><td><span class="badge badge-unsafe">Xavfli</span></td><td><span class="badge badge-escalated">SESga yuborilgan</span></td><td><span class="email-dot email-pending">—</span></td><td class="text-muted mono">23.03.2026</td><td><a href="#detail-demo" class="table-link">Ko'rish →</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination"><a href="#dashboard-demo" class="page-btn">← Oldingi</a><span class="page-info">1 / 8</span><a href="#dashboard-demo" class="page-btn">Keyingi →</a></div>
+      </div>
+    </section>
+
+    <section class="section-anchor" id="detail-demo">
+      <div class="page-header"><div class="container"><div class="page-breadcrumb"><a href="#home">Bosh sahifa</a> / <a href="#dashboard-demo">Dashboard</a> / #248</div></div></div>
+      <div class="container">
+        <div class="detail-layout">
+          <div class="detail-main">
+            <div class="detail-card">
+              <div class="detail-header"><div><h1 class="detail-title">Qatiq 1L</h1><div class="detail-org">🏢 <a href="#organization-detail-demo">Fresh Market Group</a></div></div><div class="detail-badges"><span class="badge badge-pending">Ko'rib chiqilmoqda</span><span class="badge badge-expired">Muddati o'tgan</span></div></div>
+              <div class="detail-image-wrap"><div class="detail-image" style="display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--muted);">Mahsulot rasmi preview</div></div>
+              <div class="detail-section"><h3>📝 Tavsif</h3><p class="detail-desc">Mahsulotning yaroqlilik muddati tugagan, lekin hali do'kon tokchasida turibdi. Qadoq shikastlanmagan, ammo muddat aniq o'tib ketgan.</p></div>
+              <div class="detail-section detail-admin-note"><h3>💬 Admin izohi</h3><p>Tashkilotga avtomatik email yuborildi. Javob 48 soat ichida kutilmoqda.</p></div>
+            </div>
+          </div>
+          <div class="detail-sidebar">
+            <div class="meta-card"><h3>📋 Tafsilotlar</h3><div class="meta-row"><span>Shikoyat №</span><span class="mono">#248</span></div><div class="meta-row"><span>Sana</span><span>25.03.2026 16:10</span></div><div class="meta-row"><span>Yangilangan</span><span>25.03.2026 16:25</span></div><div class="meta-row"><span>Email</span><span style="color:var(--green)">✅ Yuborildi</span></div><div class="meta-row"><span>Foydalanuvchi</span><span>avazbek</span></div></div>
+            <div class="meta-card"><h3>🏢 Tashkilot</h3><div class="org-mini"><strong>Fresh Market Group</strong><div class="org-mini-row">📧 info@freshmarket.uz</div><div class="org-mini-row">📞 +998 90 123 45 67</div><div class="org-rating-mini">★ 4.6/5.0</div><a href="#organization-detail-demo" class="link-arrow">Tashkilotni ko'rish →</a></div></div>
+            <div class="sidebar-actions"><a href="#dashboard-demo" class="btn-outline btn-full">← Dashboardga qaytish</a><a href="#submit-demo" class="btn-primary btn-full">+ Yangi shikoyat</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-anchor" id="organizations-demo">
+      <div class="page-header"><div class="container"><div class="page-header-inner"><div><div class="page-breadcrumb"><a href="#home">Bosh sahifa</a> / Tashkilotlar</div><h1 class="page-title">🏢 Tashkilotlar Reytingi</h1><p class="page-sub">3 ta tashkilot ro'yxatda</p></div></div></div></div>
+      <div class="container">
+        <div class="orgs-grid">
+          <a href="#organization-detail-demo" class="org-card"><div class="org-card-header"><div class="org-name">Quality Food Trade LLC</div></div><div class="rating-wrap"><div class="rating-stars"><span class="star star-on">★</span><span class="star star-on">★</span><span class="star star-on">★</span><span class="star star-on">★</span><span class="star">★</span></div><span class="rating-num">4.6</span></div><div class="org-stats"><div class="org-stat"><div class="org-stat-num">12</div><div class="org-stat-label">Jami</div></div><div class="org-stat"><div class="org-stat-num org-stat-resolved">10</div><div class="org-stat-label">Hal qilingan</div></div><div class="org-stat"><div class="org-stat-num">2</div><div class="org-stat-label">Hal qilinmagan</div></div></div><div class="org-email">📧 info@qualityfood.uz</div></a>
+          <a href="#organization-detail-demo" class="org-card"><div class="org-card-header"><div class="org-name">Fresh Market Group</div></div><div class="rating-wrap"><div class="rating-stars"><span class="star star-on">★</span><span class="star star-on">★</span><span class="star star-on">★</span><span class="star star-on">★</span><span class="star">★</span></div><span class="rating-num">4.1</span></div><div class="org-stats"><div class="org-stat"><div class="org-stat-num">27</div><div class="org-stat-label">Jami</div></div><div class="org-stat"><div class="org-stat-num org-stat-resolved">18</div><div class="org-stat-label">Hal qilingan</div></div><div class="org-stat"><div class="org-stat-num org-stat-danger">9</div><div class="org-stat-label">Hal qilinmagan</div></div></div><div class="org-email">📧 info@freshmarket.uz</div></a>
+          <a href="#organization-detail-demo" class="org-card org-escalated"><div class="org-card-header"><div class="org-name">Natural Supply Co.</div><span class="escalated-badge">⚠️ SES</span></div><div class="rating-wrap"><div class="rating-stars"><span class="star star-on">★</span><span class="star star-on">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span></div><span class="rating-num">2.9</span></div><div class="org-stats"><div class="org-stat"><div class="org-stat-num">41</div><div class="org-stat-label">Jami</div></div><div class="org-stat"><div class="org-stat-num org-stat-resolved">19</div><div class="org-stat-label">Hal qilingan</div></div><div class="org-stat"><div class="org-stat-num org-stat-danger">22</div><div class="org-stat-label">Hal qilinmagan</div></div></div><div class="org-email">📧 support@naturalsupply.uz</div></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-anchor" id="organization-detail-demo">
+      <div class="page-header"><div class="container"><div class="page-breadcrumb"><a href="#home">Bosh sahifa</a> / <a href="#organizations-demo">Tashkilotlar</a> / Fresh Market Group</div></div></div>
+      <div class="container">
+        <div class="detail-layout">
+          <div class="detail-main">
+            <div class="detail-card">
+              <div class="detail-header"><div><h1 class="detail-title">Fresh Market Group</h1><div class="detail-org">📍 Toshkent shahri, Chilonzor tumani</div></div></div>
+              <div class="org-rating-display"><div class="rating-big"><span class="rating-num-big">4.1</span><span class="rating-outof">/5.0</span></div><div class="rating-stars-big"><span class="star-big star-on">★</span><span class="star-big star-on">★</span><span class="star-big star-on">★</span><span class="star-big star-on">★</span><span class="star-big">★</span></div></div>
+              <div class="stats-grid-sm"><div class="stat-card-sm"><div class="stat-num-sm">27</div><div class="stat-label-sm">Jami shikoyatlar</div></div><div class="stat-card-sm stat-resolved"><div class="stat-num-sm">18</div><div class="stat-label-sm">Hal qilingan</div></div><div class="stat-card-sm stat-danger"><div class="stat-num-sm">9</div><div class="stat-label-sm">Hal qilinmagan</div></div></div>
+              <div class="detail-section"><h3>📋 So'nggi shikoyatlar</h3><div class="complaint-mini-list"><a href="#detail-demo" class="complaint-mini"><span class="mono text-muted">#248</span><span>Qatiq 1L</span><span class="badge badge-pending">Ko'rib chiqilmoqda</span><span class="text-muted">25.03.2026</span></a><a href="#detail-demo" class="complaint-mini"><span class="mono text-muted">#233</span><span>Smetana 400g</span><span class="badge badge-resolved">Hal qilingan</span><span class="text-muted">20.03.2026</span></a><a href="#detail-demo" class="complaint-mini"><span class="mono text-muted">#219</span><span>Bolalar yogurti</span><span class="badge badge-escalated">SESga yuborilgan</span><span class="text-muted">17.03.2026</span></a></div></div>
+            </div>
+          </div>
+          <div class="detail-sidebar">
+            <div class="meta-card"><h3>📞 Aloqa</h3><div class="meta-row"><span>Email</span><span>info@freshmarket.uz</span></div><div class="meta-row"><span>Telefon</span><span>+998 90 123 45 67</span></div><div class="meta-row"><span>INN</span><span class="mono">309123456</span></div></div>
+            <div class="sidebar-actions"><a href="#organizations-demo" class="btn-outline btn-full">← Orqaga</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand"><span class="logo-shield">🛡️</span> <strong>SESUZPORT</strong><p>Oziq-ovqat xavfsizligi nazorat platformasi</p></div>
+      <div class="footer-links"><a href="#dashboard-demo">Shikoyatlar</a><a href="#organizations-demo">Tashkilotlar</a><a href="#submit-demo">Shikoyat yuborish</a><a href="#home">Bosh sahifa</a></div>
+      <div class="footer-copy">© 2026 SESUZPORT. Barcha huquqlar himoyalangan.<br><span class="mono"></span></div>
+    </div>
+  </footer>
+
+  <script>
+/**
+ * SESUZPORT — Main JavaScript
+ * Handles: nav, message auto-dismiss, misc UX
+ */
+
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ─── Mobile nav burger ──────────────────────────────────────────────────────
+  const burger = document.getElementById('navBurger');
+  const drawer = document.getElementById('navDrawer');
+  if (burger && drawer) {
+    burger.addEventListener('click', () => {
+      drawer.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!burger.contains(e.target) && !drawer.contains(e.target)) {
+        drawer.classList.remove('open');
+      }
+    });
+  }
+
+  // ─── Auto-dismiss messages after 5 seconds ──────────────────────────────────
+  const messages = document.querySelectorAll('.message');
+  messages.forEach(msg => {
+    setTimeout(() => {
+      msg.style.opacity = '0';
+      msg.style.transform = 'translateX(20px)';
+      msg.style.transition = 'all 0.3s ease';
+      setTimeout(() => msg.remove(), 300);
+    }, 5000);
+  });
+
+  // ─── Highlight active nav link based on current path ───────────────────────
+  const currentPath = window.location.pathname;
+  document.querySelectorAll('.nav-link').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && href !== '/' && currentPath.startsWith(href)) {
+      link.classList.add('active');
+    }
+  });
+
+  // ─── Table row click → navigate to detail ──────────────────────────────────
+  document.querySelectorAll('.table-row').forEach(row => {
+    const link = row.querySelector('.table-link');
+    if (link) {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', (e) => {
+        if (!e.target.closest('a')) {
+          window.location.href = link.href;
+        }
+      });
+    }
+  });
+
+  // ─── Smooth scroll for anchor links ─────────────────────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+});
+// page-specific demo interactions
+const zone = document.getElementById('uploadZone');
+const input = document.getElementById('image-upload');
+const placeholder = document.getElementById('uploadPlaceholder');
+const preview = document.getElementById('uploadPreview');
+const previewImg = document.getElementById('previewImg');
+const removeBtn = document.getElementById('removeImg');
+function showPreview(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    placeholder.style.display = 'none';
+    preview.style.display = 'block';
+    zone.classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+if (input) {
+  input.addEventListener('change', e => { if (e.target.files[0]) showPreview(e.target.files[0]); });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); const file = e.dataTransfer.files[0]; if (file && file.type.startsWith('image/')) { const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files; showPreview(file); } });
+}
+if (removeBtn) removeBtn.addEventListener('click', () => { input.value=''; preview.style.display='none'; placeholder.style.display='block'; zone.classList.remove('has-image'); });
+const desc = document.querySelector('textarea[name="description"]');
+const counter = document.getElementById('charCount');
+if (desc && counter) { desc.addEventListener('input', () => { counter.textContent = desc.value.length; counter.style.color = desc.value.length > 450 ? '#e74c3c' : ''; }); counter.textContent = desc.value.length; }
+const lookupBtn = document.getElementById('lookupBtn');
+const companyInput = document.getElementById('company-name-input');
+const lookupResult = document.getElementById('lookupResult');
+if (lookupBtn) lookupBtn.addEventListener('click', async () => {
+  const q = companyInput.value.trim().toLowerCase();
+  lookupBtn.textContent = '⏳';
+  lookupBtn.disabled = true;
+  await new Promise(r => setTimeout(r, 650));
+  if (q.includes('fresh')) {
+    lookupResult.innerHTML = `<div class="lookup-found"><strong>Fresh Market Group</strong><div class="lookup-detail">📧 info@freshmarket.uz · 📞 +998 90 123 45 67</div></div>`;
+  } else if (q) {
+    lookupResult.innerHTML = `<div class="lookup-notfound">⚠️ Topilmadi — yangi tashkilot yaratiladi</div>`;
+  } else {
+    lookupResult.innerHTML = `<div class="lookup-notfound">❌ Avval nom kiriting</div>`;
+  }
+  lookupResult.style.display = 'block';
+  lookupBtn.textContent = '🔍';
+  lookupBtn.disabled = false;
+});
+const complaintForm = document.getElementById('complaintForm');
+if (complaintForm) complaintForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  document.querySelector('.btn-text').style.display = 'none';
+  document.querySelector('.btn-loading').style.display = 'inline';
+  document.getElementById('submitBtn').disabled = true;
+  setTimeout(() => {
+    document.querySelector('.btn-text').style.display = 'inline';
+    document.querySelector('.btn-loading').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('success-demo').scrollIntoView({behavior:'smooth'});
+  }, 900);
+});
+  </script>
+</body>
+</html>
