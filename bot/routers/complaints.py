@@ -1,0 +1,419 @@
+import logging
+import re
+
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
+
+from bot.keyboards.consumer import consumer_keyboard
+from bot.keyboards.complaint import (
+    cancel_keyboard,
+    location_keyboard,
+    complaint_detail_keyboard,
+    complaints_list_keyboard,
+)
+from bot.services.complaint_service import (
+    create_complaint,
+    get_user_complaints,
+    get_complaint_by_id,
+    update_complaint_status_by_admin,
+)
+from bot.services.notification_service import (
+    notify_complaint_created,
+    notify_admins_new_complaint,
+    notify_complaint_status_changed,
+)
+from bot.states.complaint import ComplaintStates
+from bot.utils.formatters import (
+    format_complaint_confirmation,
+    format_complaint_detail,
+    format_date,
+    format_complaint_status,
+)
+
+logger = logging.getLogger(__name__)
+router = Router(name='complaints_router')
+
+
+# ─── Start Complaint FSM ────────────────────────────────────────────────────
+
+@router.message(F.text.in_(["📝 Shikoyat qilish", "Shikoyat qilish", "/complaint", "/shikoyat"]))
+async def start_complaint(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await state.set_state(ComplaintStates.waiting_for_description)
+    await message.answer(
+        "📝 <b>Yangi shikoyat yuborish</b>\n\n"
+        "Iltimos, mahsulot va muammo haqida batafsil ma'lumot yozing:\n"
+        "• Do'kon yoki mahsulot nomi\n"
+        "• Qanday buzilish aniqlandi (masalan, muddati o'tgan, sifatsiz)\n"
+        "• Amal qilish muddati yoki narxi\n\n"
+        "<i>Kamida 10 ta belgi yozing yoki rasmini izoh bilan yuboring.</i>",
+        reply_markup=cancel_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+# ─── State 1: Description ──────────────────────────────────────────────────
+
+@router.message(ComplaintStates.waiting_for_description, F.text)
+async def process_description_text(message: Message, state: FSMContext) -> None:
+    text = (message.text or '').strip()
+
+    if text == '❌ Bekor qilish':
+        await _cancel_complaint(message, state)
+        return
+
+    if len(text) < 10:
+        await message.answer(
+            "⚠️ Tavsif juda qisqa. Kamida <b>10 ta belgi</b> kiriting:",
+            parse_mode="HTML",
+        )
+        return
+
+    if len(text) > 3000:
+        await message.answer(
+            f"⚠️ Tavsif juda uzun. Maksimal <b>3000 ta belgi</b> (hozir {len(text)} ta).",
+            parse_mode="HTML",
+        )
+        return
+
+    await state.update_data(description=text)
+    await state.set_state(ComplaintStates.waiting_for_photo)
+    await message.answer(
+        "📸 <b>Mahsulot rasmi</b>\n\n"
+        "Endi mahsulot yoki chekning rasmini yuboring.\n"
+        "Rasmda mahsulot holati yoki amal qilish muddati aniq ko'rinsin.",
+        reply_markup=cancel_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+@router.message(ComplaintStates.waiting_for_description, F.photo)
+async def process_description_with_photo(message: Message, state: FSMContext) -> None:
+    """Handle case where user sends photo with caption at the start."""
+    caption = (message.caption or '').strip()
+    photo_id = message.photo[-1].file_id
+
+    if len(caption) >= 10:
+        # User provided both photo and description in caption
+        await state.update_data(description=caption, photo_file_id=photo_id)
+        await state.set_state(ComplaintStates.waiting_for_location)
+        await message.answer(
+            "📍 <b>Do'kon joylashuvi</b>\n\n"
+            "Mahsulot sotib olingan do'kon joylashuvini (GPS) yuboring.\n"
+            "Telegram Desktop yoki veb foydalanuvchilari uchun standart tugma ham mavjud:",
+            reply_markup=location_keyboard(),
+            parse_mode="HTML",
+        )
+    else:
+        # Photo provided, but need description
+        await state.update_data(photo_file_id=photo_id)
+        await message.answer(
+            "📸 Rasm qabul qilindi!\n\n"
+            "Endi iltimos, <b>muammo tavsifini</b> yozib yuboring (kamida 10 ta belgi):",
+            parse_mode="HTML",
+        )
+
+
+# ─── State 2: Photo ────────────────────────────────────────────────────────
+
+@router.message(ComplaintStates.waiting_for_photo, F.photo)
+async def process_photo(message: Message, state: FSMContext) -> None:
+    photo_id = message.photo[-1].file_id
+    await state.update_data(photo_file_id=photo_id)
+    await state.set_state(ComplaintStates.waiting_for_location)
+    await message.answer(
+        "📍 <b>Do'kon joylashuvi</b>\n\n"
+        "Mahsulot xarid qilingan do'konning GPS joylashuvini yuboring.\n\n"
+        "Quyidagi tugmalardan birini tanlang:",
+        reply_markup=location_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+@router.message(ComplaintStates.waiting_for_photo, F.document)
+async def process_photo_document(message: Message, state: FSMContext) -> None:
+    if message.document.mime_type and message.document.mime_type.startswith('image/'):
+        photo_id = message.document.file_id
+        await state.update_data(photo_file_id=photo_id)
+        await state.set_state(ComplaintStates.waiting_for_location)
+        await message.answer(
+            "📍 <b>Do'kon joylashuvi</b>\n\n"
+            "Mahsulot xarid qilingan do'konning GPS joylashuvini yuboring:",
+            reply_markup=location_keyboard(),
+            parse_mode="HTML",
+        )
+    else:
+        await message.answer(
+            "⚠️ Iltimos, faqat rasm faylini yuboring.",
+            parse_mode="HTML",
+        )
+
+
+@router.message(ComplaintStates.waiting_for_photo, F.text == '❌ Bekor qilish')
+async def cancel_at_photo(message: Message, state: FSMContext) -> None:
+    await _cancel_complaint(message, state)
+
+
+@router.message(ComplaintStates.waiting_for_photo)
+async def process_photo_invalid(message: Message) -> None:
+    await message.answer(
+        "⚠️ Iltimos, mahsulot <b>rasmini</b> yuboring yoki «❌ Bekor qilish» tugmasini bosing.",
+        reply_markup=cancel_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+# ─── State 3: Location ────────────────────────────────────────────────────
+
+@router.message(ComplaintStates.waiting_for_location, F.location)
+async def process_location_gps(message: Message, state: FSMContext) -> None:
+    await _finalize_complaint(
+        message=message,
+        state=state,
+        latitude=message.location.latitude,
+        longitude=message.location.longitude,
+    )
+
+
+@router.message(ComplaintStates.waiting_for_location, F.text == '❌ Bekor qilish')
+async def cancel_at_location(message: Message, state: FSMContext) -> None:
+    await _cancel_complaint(message, state)
+
+
+@router.message(ComplaintStates.waiting_for_location)
+async def process_location_invalid(message: Message) -> None:
+    await message.answer(
+        "🛡️ <b>Xavfsizlik talabi:</b>\n\n"
+        "Soxta murojaatlarning oldini olish uchun shikoyat faqat <b>aynan o'sha do'konda turgan joyingizdan</b> "
+        "yuborilishi shart. Masofadan turib yoki qo'lda boshqa joyni tanlash taqiqlangan.\n\n"
+        "Iltimos, pastdagi <b>«📍 Haqiqiy GPS joylashuvni yuborish»</b> tugmasini bosing:",
+        reply_markup=location_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+async def _finalize_complaint(message: Message, state: FSMContext, latitude: float, longitude: float) -> None:
+    data = await state.get_data()
+    description = data.get('description', 'Tavsif berilmagan')
+    photo_file_id = data.get('photo_file_id', '')
+
+    user_info = {
+        'first_name': message.from_user.first_name,
+        'last_name': message.from_user.last_name or '',
+        'username': message.from_user.username or '',
+    }
+
+    try:
+        complaint = await create_complaint(
+            telegram_id=message.from_user.id,
+            description=description,
+            photo_file_id=photo_file_id,
+            latitude=latitude,
+            longitude=longitude,
+            user_info=user_info,
+        )
+    except Exception as e:
+        logger.error(f"Failed to create complaint for user {message.from_user.id}: {e}", exc_info=True)
+        await state.clear()
+        await message.answer(
+            "⚠️ Murojaatni saqlashda texnik xatolik yuz berdi. Iltimos, qayta urinib ko'ring.",
+            reply_markup=consumer_keyboard(),
+        )
+        return
+
+    await state.clear()
+
+    confirm_text = format_complaint_confirmation(
+        ticket_id=complaint.ticket_id,
+        description=complaint.description,
+        latitude=float(complaint.latitude),
+        longitude=float(complaint.longitude),
+    )
+    await message.answer(confirm_text, reply_markup=consumer_keyboard(), parse_mode="HTML")
+
+    # 1. Notify user
+    try:
+        await notify_complaint_created(message.from_user.id, complaint.ticket_id)
+    except Exception as e:
+        logger.warning(f"User confirmation notification error: {e}")
+
+    # 2. Notify all admins with photo + action buttons
+    try:
+        await notify_admins_new_complaint(complaint.id)
+    except Exception as e:
+        logger.error(f"Admin alert notification error: {e}", exc_info=True)
+
+
+# ─── Admin Moderation Actions (Inline Callbacks) ───────────────────────────
+
+@router.callback_query(F.data.startswith("adm_status_"))
+async def admin_status_callback(callback: CallbackQuery) -> None:
+    parts = callback.data.split('_')
+    # adm_status_<complaint_id>_<STATUS>
+    if len(parts) < 4:
+        await callback.answer("Noto'g'ri so'rov.")
+        return
+
+    complaint_id = int(parts[2])
+    new_status = '_'.join(parts[3:])
+
+    try:
+        complaint = await update_complaint_status_by_admin(
+            complaint_id=complaint_id,
+            new_status=new_status,
+            comment=f"Admin @{callback.from_user.username or callback.from_user.id} tomonidan yangilandi"
+        )
+        if not complaint:
+            await callback.answer("Murojaat topilmadi.", show_alert=True)
+            return
+
+        # Notify user about the new status
+        await notify_complaint_status_changed(
+            telegram_id=complaint.user.telegram_id,
+            ticket_id=complaint.ticket_id,
+            new_status=new_status,
+        )
+
+        status_text = complaint.get_status_display()
+        await callback.answer(f"✅ Holat «{status_text}» ga o'zgartirildi!")
+
+        # Update caption or message
+        updated_caption = (
+            f"🎫 <b>Murojaat:</b> <code>{complaint.ticket_id}</code>\n"
+            f"👤 <b>Foydalanuvchi:</b> {complaint.user.full_name}\n"
+            f"📊 <b>Yangi holat:</b> <b>{status_text}</b>\n"
+            f"👮 <b>Moderator:</b> @{callback.from_user.username or callback.from_user.id}\n\n"
+            f"📝 <b>Tavsif:</b>\n{complaint.description}"
+        )
+        if callback.message.caption:
+            await callback.message.edit_caption(caption=updated_caption, parse_mode="HTML")
+        else:
+            await callback.message.edit_text(text=updated_caption, parse_mode="HTML")
+
+    except Exception as e:
+        logger.error(f"Error in admin status callback: {e}", exc_info=True)
+        await callback.answer("Xatolik yuz berdi.", show_alert=True)
+
+
+# ─── My Complaints ────────────────────────────────────────────────────────
+
+@router.message(F.text.in_(["📁 Mening murojaatlarim", "Mening murojaatlarim", "/my_complaints"]))
+async def my_complaints(message: Message) -> None:
+    try:
+        complaints, total_pages = await get_user_complaints(message.from_user.id, page=1)
+    except Exception as e:
+        logger.error(f"My complaints error for {message.from_user.id}: {e}")
+        await message.answer("⚠️ Murojaatlarni olishda xatolik yuz berdi.")
+        return
+
+    if not complaints:
+        await message.answer(
+            "📁 <b>Mening murojaatlarim</b>\n\nSizda hali yuborilgan murojaatlar yo'q.\n\n"
+            "📝 Yangi murojaat yuborish uchun quyidagi «📝 Shikoyat qilish» tugmasini bosing.",
+            reply_markup=consumer_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    text = _build_complaints_text(complaints, page=1, total_pages=total_pages)
+    kb = complaints_list_keyboard(complaints, 1, total_pages)
+    await message.answer(text, reply_markup=kb, parse_mode="HTML")
+
+
+@router.callback_query(F.data.startswith("complaints_page_"))
+async def complaints_page(callback: CallbackQuery) -> None:
+    page = int(callback.data.split('_')[2])
+    try:
+        complaints, total_pages = await get_user_complaints(callback.from_user.id, page=page)
+        text = _build_complaints_text(complaints, page=page, total_pages=total_pages)
+        kb = complaints_list_keyboard(complaints, page, total_pages)
+        await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Complaints page error: {e}")
+        await callback.answer("Xatolik yuz berdi.")
+
+
+@router.callback_query(F.data.startswith("complaint_detail_"))
+async def complaint_detail_cb(callback: CallbackQuery) -> None:
+    complaint_id = int(callback.data.split('_')[2])
+    try:
+        c = await get_complaint_by_id(complaint_id, callback.from_user.id)
+        if not c:
+            await callback.answer("Murojaat topilmadi.")
+            return
+        text = format_complaint_detail(c)
+        await callback.message.answer(
+            text,
+            reply_markup=complaint_detail_keyboard(c.id),
+            parse_mode="HTML",
+        )
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Complaint detail error: {e}")
+        await callback.answer("Xatolik yuz berdi.")
+
+
+@router.callback_query(F.data.startswith("complaint_photo_"))
+async def complaint_photo_cb(callback: CallbackQuery) -> None:
+    complaint_id = int(callback.data.split('_')[2])
+    try:
+        c = await get_complaint_by_id(complaint_id, callback.from_user.id)
+        if not c or not c.photo_file_id:
+            await callback.answer("Rasm topilmadi.")
+            return
+        await callback.message.answer_photo(
+            c.photo_file_id,
+            caption=f"📷 Murojaat rasmi: <code>{c.ticket_id}</code>",
+            parse_mode="HTML",
+        )
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Complaint photo error: {e}")
+        await callback.answer("Xatolik yuz berdi.")
+
+
+@router.callback_query(F.data.startswith("complaint_location_"))
+async def complaint_location_cb(callback: CallbackQuery) -> None:
+    complaint_id = int(callback.data.split('_')[2])
+    try:
+        c = await get_complaint_by_id(complaint_id, callback.from_user.id)
+        if not c or not c.latitude:
+            await callback.answer("Joylashuv topilmadi.")
+            return
+        await callback.message.answer_location(
+            latitude=float(c.latitude),
+            longitude=float(c.longitude),
+        )
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Complaint location error: {e}")
+        await callback.answer("Xatolik yuz berdi.")
+
+
+@router.callback_query(F.data == "ignore")
+async def ignore_cb(callback: CallbackQuery) -> None:
+    await callback.answer()
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────
+
+async def _cancel_complaint(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    await message.answer(
+        "❌ Murojaat bekor qilindi.\n\nAsosiy menyuga qaytdingiz.",
+        reply_markup=consumer_keyboard(),
+    )
+
+
+def _build_complaints_text(complaints, page: int, total_pages: int) -> str:
+    lines = [f"📁 <b>Mening murojaatlarim</b> (sahifa {page}/{total_pages}):\n"]
+    for c in complaints:
+        lines.append(
+            f"🎫 <b>{c.ticket_id}</b>\n"
+            f"   Holat: {format_complaint_status(c.status)}\n"
+            f"   Sana: 📅 {format_date(c.created_at)}\n"
+        )
+    lines.append("Batafsil ma'lumot olish uchun quyidagi tugmalardan foydalaning:")
+    return '\n'.join(lines)

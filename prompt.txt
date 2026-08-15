@@ -1,0 +1,1724 @@
+# SESPORT — Production Telegram Bot Development Specification
+
+## 1. ROLE
+
+Act as a **Senior Python Backend Engineer, Django Architect, Telegram Bot Developer, Database Designer, and DevOps Engineer**.
+
+Build a complete, production-ready Telegram Bot called **SESPORT** using:
+
+* Python 3.11+
+* Django 5.x
+* Django Admin
+* Aiogram 3.x
+* Asyncio
+* FSM (Finite State Machine)
+* PostgreSQL
+* Redis
+* Django ORM
+* aiogram
+* python-dotenv / environment variables
+* Docker + Docker Compose
+* Webhook-ready architecture
+* REST API layer where necessary
+* Proper logging
+* Error handling
+* Security best practices
+
+The project must be written as a **real production application**, not as a simple demonstration or single-file Telegram bot.
+
+Do NOT put all code into one file.
+
+Use a clean modular architecture with separation of concerns.
+
+---
+
+# 2. PROJECT PURPOSE
+
+SESPORT is a consumer-protection Telegram platform.
+
+The system allows consumers to:
+
+* Submit complaints about expired or defective products.
+* Upload product evidence/photos.
+* Send the store's GPS location.
+* Track complaint status.
+* Check nearby stores.
+* View store safety ratings.
+* Track cashback/rewards.
+* Read consumer rights information.
+* Contact support.
+
+The system must also provide an **administrator/moderator interface through Django Admin**.
+
+Administrators must be able to:
+
+* View users.
+* View complaints.
+* Moderate complaints.
+* Change complaint statuses.
+* View uploaded evidence.
+* View complaint locations.
+* Manage stores.
+* Manage store safety ratings.
+* Manage cashback/rewards.
+* Manage consumer rights content.
+* Manage support information.
+* View basic system statistics.
+
+---
+
+# 3. REQUIRED ARCHITECTURE
+
+Use the following general architecture:
+
+```text
+SESPORT/
+│
+├── manage.py
+├── requirements.txt
+├── .env
+├── .env.example
+├── Dockerfile
+├── docker-compose.yml
+├── README.md
+│
+├── config/
+│   ├── __init__.py
+│   ├── settings/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── development.py
+│   │   └── production.py
+│   ├── urls.py
+│   ├── asgi.py
+│   └── wsgi.py
+│
+├── apps/
+│   ├── users/
+│   ├── complaints/
+│   ├── stores/
+│   ├── cashback/
+│   ├── rights/
+│   ├── support/
+│   └── bot/
+│
+├── bot/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   ├── routers/
+│   ├── handlers/
+│   ├── keyboards/
+│   ├── states/
+│   ├── filters/
+│   ├── middlewares/
+│   ├── services/
+│   └── utils/
+│
+├── templates/
+├── static/
+├── media/
+└── logs/
+```
+
+You may improve this architecture if you have a better production-grade structure, but keep Django applications and Telegram bot logic properly separated.
+
+---
+
+# 4. DJANGO APPLICATIONS
+
+Create separate Django apps.
+
+## users
+
+Responsible for:
+
+* Telegram users
+* User roles
+* Telegram ID
+* Username
+* First name
+* Last name
+* Phone number
+* Registration date
+* Last activity
+* Active/inactive status
+
+Roles:
+
+```text
+CONSUMER
+ENTREPRENEUR
+ADMIN
+MODERATOR
+```
+
+A Telegram user must be uniquely identified by:
+
+```python
+telegram_id
+```
+
+Do NOT rely on username as the primary identifier.
+
+---
+
+# 5. COMPLAINT SYSTEM
+
+Create a dedicated `complaints` Django application.
+
+Complaint model should contain at minimum:
+
+```text
+id
+ticket_id
+user
+description
+photo
+latitude
+longitude
+status
+moderation_comment
+created_at
+updated_at
+resolved_at
+```
+
+Complaint statuses:
+
+```text
+PENDING
+UNDER_REVIEW
+APPROVED
+REJECTED
+RESOLVED
+```
+
+Generate a human-readable ticket ID such as:
+
+```text
+SES-2026-000001
+SES-2026-000002
+```
+
+Ticket IDs must be unique.
+
+---
+
+# 6. COMPLAINT FSM
+
+Implement the complaint process using **Aiogram 3.x FSM**.
+
+When the user clicks:
+
+```text
+📝 Shikoyat qilish
+```
+
+start the FSM.
+
+## State 1 — Complaint Description
+
+Send:
+
+```text
+Mahsulot haqida batafsil tasnif kiriting:
+```
+
+Accept text input.
+
+Validate:
+
+* Text must not be empty.
+* Minimum recommended length: 10 characters.
+* Maximum length: 3000 characters.
+
+Save the text into FSM state.
+
+Then transition to:
+
+```text
+ComplaintStates.waiting_for_photo
+```
+
+---
+
+# 7. STATE 2 — PHOTO
+
+Send:
+
+```text
+Mahsulot va uning amal qilish muddatini tasdiqlovchi rasmni yuboring:
+```
+
+Accept only Telegram photo messages.
+
+If the user sends anything other than a photo:
+
+```text
+Iltimos, mahsulotning aniq rasmini yuboring.
+```
+
+When a valid photo is received:
+
+* Save Telegram `file_id`.
+* Store it in FSM state.
+* Optionally download/store the file through a service layer if required.
+* Transition to location state.
+
+Do NOT unnecessarily duplicate Telegram files.
+
+---
+
+# 8. STATE 3 — LOCATION
+
+Send a Reply Keyboard containing:
+
+```text
+📍 Do'kon joylashuvini (GPS) yuborish
+```
+
+The button must use:
+
+```python
+KeyboardButton(
+    text="📍 Do'kon joylashuvini (GPS) yuborish",
+    request_location=True
+)
+```
+
+Accept only Telegram location messages.
+
+Save:
+
+```text
+latitude
+longitude
+```
+
+If the user sends anything else:
+
+```text
+Iltimos, do‘kon joylashuvini GPS orqali yuboring.
+```
+
+---
+
+# 9. COMPLAINT COMPLETION
+
+After successfully receiving:
+
+* Description
+* Photo
+* Latitude
+* Longitude
+
+create a complaint in PostgreSQL.
+
+Generate a unique ticket ID.
+
+Set initial status:
+
+```text
+PENDING
+```
+
+Send the user a structured confirmation:
+
+```text
+✅ Murojaatingiz qabul qilindi!
+
+🎫 Murojaat ID: SES-2026-000001
+
+📦 Mahsulot:
+{description}
+
+📍 Do‘kon joylashuvi:
+{latitude}, {longitude}
+
+📊 Holat:
+⏳ Moderatsiya kutilmoqda.
+
+Murojaatingiz moderator tomonidan ko‘rib chiqiladi.
+Natija bo‘yicha sizga Telegram orqali xabar beriladi.
+```
+
+After successful creation:
+
+```python
+await state.clear()
+```
+
+---
+
+# 10. ROLE SELECTION
+
+When the user sends:
+
+```text
+/start
+```
+
+display:
+
+```text
+👤 Iste’molchi (Mijoz)
+💼 Tadbirkor
+```
+
+using a Reply Keyboard.
+
+---
+
+# 11. CONSUMER ROLE
+
+When the user selects:
+
+```text
+👤 Iste’molchi (Mijoz)
+```
+
+save their role in the database.
+
+Send:
+
+```text
+Iste’molchi menyusi. Atrofingizdagi do‘konlarni tekshiring, buzilishlar haqida murojaat yuboring va keshbeklaringizni kuzating.
+```
+
+Then show the persistent main menu.
+
+Keyboard:
+
+```text
+Row 1:
+📝 Shikoyat qilish | 📁 Mening murojaatlarim
+
+Row 2:
+🏪 Do‘konlarni tekshirish | 💳 Keshbeklarni kuzatish
+
+Row 3:
+⚖️ Huquqlarim | 💬 Yordam
+
+Row 4:
+🔄 Rolni almashtirish
+```
+
+Use `ReplyKeyboardMarkup`.
+
+Set:
+
+```python
+resize_keyboard=True
+is_persistent=True
+```
+
+where supported.
+
+---
+
+# 12. ENTREPRENEUR ROLE
+
+When:
+
+```text
+💼 Tadbirkor
+```
+
+is selected, implement a separate entrepreneur menu.
+
+Minimum structure:
+
+```text
+🏪 Mening do‘konlarim
+📊 Do‘kon statistikasi
+📋 Murojaatlar
+⭐ Reytingim
+💰 Keshbek
+💬 Yordam
+🔄 Rolni almashtirish
+```
+
+The entrepreneur functionality can initially be implemented with clearly structured placeholders, but database architecture must support future implementation.
+
+---
+
+# 13. MY COMPLAINTS
+
+Button:
+
+```text
+📁 Mening murojaatlarim
+```
+
+Show complaints belonging ONLY to the current Telegram user.
+
+Example:
+
+```text
+📁 Mening murojaatlarim
+
+🎫 SES-2026-000021
+📊 Holat: ⏳ Moderatsiya kutilmoqda
+📅 Sana: 12.08.2026
+
+🎫 SES-2026-000018
+📊 Holat: 🔍 Ko‘rib chiqilmoqda
+📅 Sana: 10.08.2026
+
+🎫 SES-2026-000010
+📊 Holat: ✅ Hal qilindi
+📅 Sana: 05.08.2026
+```
+
+Use pagination if the user has many complaints.
+
+Add an option to view complaint details.
+
+---
+
+# 14. STORE CHECKING
+
+Button:
+
+```text
+🏪 Do‘konlarni tekshirish
+```
+
+Implement a store lookup architecture.
+
+Store model:
+
+```text
+id
+name
+address
+latitude
+longitude
+phone
+rating
+safety_status
+created_at
+updated_at
+```
+
+Safety statuses:
+
+```text
+GREEN
+YELLOW
+RED
+```
+
+Display:
+
+```text
+🟢 Xavfsiz
+🟡 Ehtiyotkorlik tavsiya etiladi
+🔴 Xavfli
+```
+
+If possible, allow users to send their location and find nearby stores using geographical distance.
+
+For PostgreSQL, preferably design the architecture so PostGIS can be introduced later.
+
+---
+
+# 15. CASHBACK
+
+Button:
+
+```text
+💳 Keshbeklarni kuzatish
+```
+
+Create cashback models.
+
+At minimum:
+
+```text
+CashbackAccount
+CashbackTransaction
+```
+
+Track:
+
+```text
+user
+amount
+transaction_type
+description
+created_at
+```
+
+Transaction types:
+
+```text
+EARN
+SPEND
+ADJUSTMENT
+```
+
+Show:
+
+```text
+💳 Keshbek balansi
+
+Joriy balans: 125,000 so‘m
+
+Bu oy:
++35,000 so‘m
+
+Jami:
+125,000 so‘m
+```
+
+---
+
+# 16. CONSUMER RIGHTS
+
+Button:
+
+```text
+⚖️ Huquqlarim
+```
+
+Create a `rights` application.
+
+Rights content must be managed from Django Admin.
+
+Do NOT hard-code all legal information into Python.
+
+Admin must be able to create/edit/delete:
+
+```text
+Title
+Content
+Category
+Order
+Is Active
+Created At
+Updated At
+```
+
+Bot retrieves active content dynamically from database.
+
+---
+
+# 17. SUPPORT
+
+Button:
+
+```text
+💬 Yordam
+```
+
+Create a support configuration model.
+
+Admin must be able to configure:
+
+```text
+Support phone
+Support Telegram username
+Support email
+Working hours
+Support description
+```
+
+The bot should dynamically display this information.
+
+Do NOT hard-code support information.
+
+---
+
+# 18. CHANGE ROLE
+
+Button:
+
+```text
+🔄 Rolni almashtirish
+```
+
+Requirements:
+
+* Clear current FSM state.
+* Return to role selection.
+* Do not delete user data.
+* Keep complaints, cashback history, etc.
+* Allow the user to choose another role.
+
+---
+
+# 19. DJANGO ADMIN PANEL
+
+The Django Admin must be professionally configured.
+
+Register and customize:
+
+### Users
+
+Admin should see:
+
+```text
+Telegram ID
+Username
+Full Name
+Role
+Phone
+Created
+Last Activity
+Status
+```
+
+Add:
+
+* search
+* filters
+* ordering
+
+---
+
+### Complaints
+
+Admin list:
+
+```text
+Ticket ID
+User
+Status
+Created At
+Updated At
+Location
+```
+
+Filters:
+
+```text
+Status
+Created date
+Updated date
+```
+
+Search:
+
+```text
+Ticket ID
+Telegram ID
+Username
+Description
+```
+
+Admin detail page must clearly show:
+
+* User
+* Complaint description
+* Product photo
+* GPS coordinates
+* Google/OSM map link
+* Status
+* Moderation comment
+* timestamps
+
+---
+
+# 20. MODERATION SYSTEM
+
+When admin changes complaint status, detect the change.
+
+If status changes:
+
+```text
+PENDING → UNDER_REVIEW
+```
+
+send Telegram notification:
+
+```text
+🔍 Murojaatingiz ko‘rib chiqilmoqda.
+
+🎫 ID: SES-2026-000001
+```
+
+If:
+
+```text
+APPROVED
+```
+
+send:
+
+```text
+✅ Murojaatingiz tasdiqlandi.
+
+🎫 ID: SES-2026-000001
+```
+
+If:
+
+```text
+REJECTED
+```
+
+send:
+
+```text
+❌ Murojaatingiz rad etildi.
+
+🎫 ID: SES-2026-000001
+
+Sabab:
+{moderation_comment}
+```
+
+If:
+
+```text
+RESOLVED
+```
+
+send:
+
+```text
+✅ Murojaatingiz bo‘yicha ish yakunlandi.
+
+🎫 ID: SES-2026-000001
+```
+
+Telegram notification logic must be implemented through a service layer, not directly inside random admin code.
+
+---
+
+# 21. DJANGO ↔ AIOGRAM ARCHITECTURE
+
+Do NOT tightly couple Telegram handlers with Django models.
+
+Use service layers.
+
+For example:
+
+```text
+bot/
+    services/
+        user_service.py
+        complaint_service.py
+        store_service.py
+        cashback_service.py
+        notification_service.py
+```
+
+Handlers should call services.
+
+Example architecture:
+
+```text
+Telegram Update
+       ↓
+Aiogram Router
+       ↓
+Handler
+       ↓
+Service Layer
+       ↓
+Django ORM
+       ↓
+PostgreSQL
+```
+
+Keep business logic outside handlers whenever practical.
+
+---
+
+# 22. ASYNC DATABASE OPERATIONS
+
+Aiogram handlers are asynchronous.
+
+Use Django's async ORM capabilities where appropriate.
+
+Avoid blocking operations inside async handlers.
+
+If synchronous Django functionality must be used, safely wrap it using:
+
+```python
+sync_to_async
+```
+
+or the appropriate Django async mechanism.
+
+Never block the event loop.
+
+---
+
+# 23. FSM STORAGE
+
+Use Redis for production FSM storage.
+
+Configure:
+
+```text
+Redis
+```
+
+as Aiogram FSM storage.
+
+Do NOT use `MemoryStorage` in production.
+
+Development may optionally use MemoryStorage.
+
+---
+
+# 24. MIDDLEWARE
+
+Implement useful middleware where appropriate:
+
+```text
+UserRegistrationMiddleware
+LoggingMiddleware
+Throttling / AntiSpam middleware
+```
+
+Automatically create/update the Telegram user in the database.
+
+Update:
+
+```text
+last_activity
+```
+
+for each interaction.
+
+---
+
+# 25. SECURITY
+
+Implement:
+
+* Environment variables for secrets.
+* No hard-coded Telegram bot token.
+* No hard-coded database password.
+* CSRF protection for Django.
+* Secure Django settings for production.
+* Allowed hosts.
+* Secret key from environment.
+* Telegram webhook secret token.
+* Input validation.
+* Rate limiting / anti-spam.
+* Proper file validation.
+* Maximum upload size.
+* Permission checks.
+* Admin authentication.
+
+`.env.example` must include:
+
+```env
+SECRET_KEY=
+DEBUG=False
+
+DATABASE_URL=
+
+POSTGRES_DB=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_HOST=
+POSTGRES_PORT=
+
+REDIS_URL=
+
+BOT_TOKEN=
+
+WEBHOOK_URL=
+WEBHOOK_SECRET=
+
+DJANGO_SUPERUSER_USERNAME=
+DJANGO_SUPERUSER_EMAIL=
+DJANGO_SUPERUSER_PASSWORD=
+```
+
+---
+
+# 26. TELEGRAM PHOTO SECURITY
+
+Do not blindly trust uploaded files.
+
+Validate:
+
+* Telegram content type.
+* File size where possible.
+* Accepted image types.
+* Maximum image size.
+
+Prevent unnecessary storage duplication.
+
+---
+
+# 27. ERROR HANDLING
+
+Implement global bot error handling.
+
+Errors must:
+
+* Be logged.
+* Not crash the bot.
+* Give users a friendly response.
+* Avoid exposing stack traces.
+
+Example:
+
+```text
+⚠️ Texnik xatolik yuz berdi.
+
+Iltimos, birozdan so‘ng qayta urinib ko‘ring.
+```
+
+Detailed exception information must go to logs only.
+
+---
+
+# 28. LOGGING
+
+Implement structured logging.
+
+At minimum log:
+
+```text
+User registration
+/start
+Role selection
+Complaint creation
+FSM errors
+Invalid input
+Admin status changes
+Telegram API errors
+Database errors
+Unhandled exceptions
+```
+
+Use Python's standard `logging` system.
+
+Separate development and production logging configuration.
+
+---
+
+# 29. DATABASE
+
+Use:
+
+```text
+PostgreSQL
+```
+
+Do not use SQLite for production.
+
+Create proper indexes for frequently queried fields:
+
+```text
+telegram_id
+ticket_id
+status
+created_at
+user_id
+```
+
+Use database constraints where appropriate.
+
+Use transactions when creating complaints and related objects.
+
+---
+
+# 30. DJANGO ADMIN DASHBOARD
+
+Make the Django Admin convenient for moderators.
+
+Add:
+
+* list filters
+* search
+* date hierarchy where useful
+* ordering
+* readonly timestamps
+* autocomplete for relations where useful
+* fieldsets
+* custom display methods
+
+Add complaint location links such as:
+
+```text
+https://www.google.com/maps?q={latitude},{longitude}
+```
+
+or OpenStreetMap.
+
+The link must be generated dynamically.
+
+---
+
+# 31. STATISTICS
+
+Add basic statistics to Django Admin if practical.
+
+Examples:
+
+```text
+Total users
+Consumers
+Entrepreneurs
+
+Total complaints
+Pending
+Under review
+Approved
+Rejected
+Resolved
+
+Total cashback issued
+```
+
+Use Django Admin-compatible implementation.
+
+Do not introduce unnecessary third-party packages unless justified.
+
+---
+
+# 32. BOT COMMANDS
+
+Implement:
+
+```text
+/start
+/help
+/cancel
+```
+
+`/cancel` must:
+
+* Clear FSM state.
+* Return the user to the appropriate main menu.
+
+---
+
+# 33. FSM CANCEL BEHAVIOR
+
+At every FSM step, allow:
+
+```text
+❌ Bekor qilish
+```
+
+or `/cancel`.
+
+The user must be able to safely cancel the complaint process.
+
+---
+
+# 34. USER EXPERIENCE
+
+The bot must:
+
+* Use Uzbek language.
+* Have clear messages.
+* Avoid excessive text.
+* Provide intuitive navigation.
+* Prevent users from getting stuck in FSM.
+* Restore the correct menu after errors.
+* Handle unexpected messages gracefully.
+
+---
+
+# 35. CALLBACKS AND INLINE KEYBOARDS
+
+Use InlineKeyboardMarkup where it makes UX better.
+
+For example:
+
+Complaint details:
+
+```text
+🎫 SES-2026-000001
+
+[📄 Batafsil]
+[📷 Rasm]
+[📍 Joylashuv]
+```
+
+Use callback data safely.
+
+Do not put huge payloads into callback_data.
+
+---
+
+# 36. DATABASE MODELS
+
+At minimum create appropriate models for:
+
+```text
+User
+Complaint
+Store
+CashbackAccount
+CashbackTransaction
+ConsumerRight
+SupportConfiguration
+```
+
+You may add:
+
+```text
+ComplaintStatusHistory
+StoreReview
+Notification
+AuditLog
+```
+
+if they improve the architecture.
+
+Prefer a `ComplaintStatusHistory` model for auditability.
+
+---
+
+# 37. AUDIT LOG
+
+Important administrator actions should be auditable.
+
+Track:
+
+```text
+admin
+action
+object
+old_value
+new_value
+created_at
+```
+
+Especially complaint status changes.
+
+---
+
+# 38. NOTIFICATION SERVICE
+
+Create:
+
+```text
+notification_service.py
+```
+
+It should provide reusable methods such as:
+
+```python
+notify_complaint_status_changed(...)
+notify_complaint_created(...)
+notify_general_message(...)
+```
+
+Telegram API communication should be centralized where practical.
+
+---
+
+# 39. WEBHOOK MODE
+
+The application must support production Telegram webhook deployment.
+
+Provide configuration for:
+
+```text
+/setWebhook
+/deleteWebhook
+```
+
+Prefer an architecture where Django/ASGI and Aiogram can coexist cleanly.
+
+If using a separate bot process, explain the architecture and ensure both processes safely access the same Django project/database.
+
+Recommended production architecture:
+
+```text
+Nginx
+   │
+   ├── Django / ASGI
+   │
+   └── Telegram Bot service
+            │
+            ├── Aiogram
+            ├── Redis
+            └── PostgreSQL
+```
+
+Use Docker Compose to orchestrate services.
+
+---
+
+# 40. DOCKER
+
+Create:
+
+```text
+Dockerfile
+docker-compose.yml
+```
+
+Services should include at minimum:
+
+```text
+web
+bot
+db
+redis
+```
+
+Optionally:
+
+```text
+nginx
+```
+
+The project must be runnable using:
+
+```bash
+docker compose up --build
+```
+
+---
+
+# 41. REQUIREMENTS
+
+Generate a clean:
+
+```text
+requirements.txt
+```
+
+with compatible versions for:
+
+* Django
+* aiogram
+* async dependencies
+* PostgreSQL driver
+* Redis
+* environment management
+* required utilities
+
+Do not add unnecessary libraries.
+
+---
+
+# 42. MIGRATIONS
+
+Create Django migrations.
+
+The project must work with:
+
+```bash
+python manage.py migrate
+```
+
+Create a superuser through environment variables or documented command.
+
+---
+
+# 43. README
+
+Create a professional `README.md`.
+
+It must explain:
+
+## Installation
+
+```bash
+git clone ...
+cd SESPORT
+python -m venv venv
+...
+```
+
+## Environment variables
+
+Explain every required `.env` variable.
+
+## Local development
+
+Explain:
+
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+python -m bot.main
+```
+
+## Docker
+
+Explain:
+
+```bash
+docker compose up --build
+```
+
+## Telegram Bot
+
+Explain:
+
+* BotFather configuration
+* BOT_TOKEN
+* webhook configuration
+* production deployment
+
+## Django Admin
+
+Explain how to access:
+
+```text
+/admin/
+```
+
+---
+
+# 44. TESTING
+
+Create a basic automated test suite.
+
+At minimum test:
+
+### User
+
+* Registration
+* Role selection
+
+### Complaint
+
+* Description validation
+* Photo validation
+* Location validation
+* Complaint creation
+* Ticket ID generation
+
+### Permissions
+
+* User can see only their complaints.
+* User cannot access another user's complaint.
+
+### Status
+
+* Status transitions
+* Notification service
+
+### Cashback
+
+* Balance calculation
+
+Use Django TestCase / pytest where appropriate.
+
+---
+
+# 45. CODE QUALITY
+
+Follow:
+
+* PEP 8
+* Type hints
+* Clear naming
+* Small functions
+* Single Responsibility Principle
+* DRY
+* SOLID where practical
+
+Use:
+
+```python
+async def
+```
+
+for bot handlers.
+
+Add type hints such as:
+
+```python
+async def handle_complaint_description(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    ...
+```
+
+Avoid:
+
+```python
+print(...)
+```
+
+Use logging.
+
+Avoid giant functions.
+
+Avoid duplicated code.
+
+---
+
+# 46. FSM STATES
+
+Create a dedicated states module.
+
+Example:
+
+```python
+class ComplaintStates(StatesGroup):
+    waiting_for_description = State()
+    waiting_for_photo = State()
+    waiting_for_location = State()
+```
+
+Make state names clear and consistent.
+
+---
+
+# 47. KEYBOARDS
+
+Create separate keyboard modules:
+
+```text
+bot/keyboards/
+    role.py
+    consumer.py
+    entrepreneur.py
+    complaint.py
+    common.py
+```
+
+Do not construct huge keyboards directly inside handlers.
+
+---
+
+# 48. ROUTERS
+
+Separate routers:
+
+```text
+bot/routers/
+    start.py
+    consumer.py
+    entrepreneur.py
+    complaints.py
+    stores.py
+    cashback.py
+    rights.py
+    support.py
+    common.py
+```
+
+Register all routers in a central dispatcher.
+
+---
+
+# 49. HANDLER FLOW
+
+Expected complaint flow:
+
+```text
+/start
+   ↓
+Role Selection
+   ↓
+👤 Iste’molchi
+   ↓
+Consumer Menu
+   ↓
+📝 Shikoyat qilish
+   ↓
+Description
+   ↓
+Photo
+   ↓
+GPS Location
+   ↓
+Database
+   ↓
+Generate Ticket ID
+   ↓
+Confirmation
+   ↓
+Pending Moderation
+```
+
+---
+
+# 50. ADMIN MODERATION FLOW
+
+Expected flow:
+
+```text
+User submits complaint
+        ↓
+Complaint = PENDING
+        ↓
+Admin sees complaint
+        ↓
+Admin reviews photo/location/description
+        ↓
+Admin changes status
+        ↓
+ComplaintStatusHistory created
+        ↓
+Notification Service
+        ↓
+Telegram notification to user
+```
+
+---
+
+# 51. IMPORTANT IMPLEMENTATION RULE
+
+Do not create fake implementations.
+
+If a feature cannot be fully implemented because an external service/API is unavailable, create a clean service interface and clearly mark the integration point.
+
+Do not use fake database data in production code.
+
+Use real Django models and PostgreSQL.
+
+---
+
+# 52. OUTPUT REQUIREMENT
+
+Generate the **complete project source code**.
+
+Do not provide only examples or partial snippets.
+
+Generate all important files including:
+
+```text
+manage.py
+settings
+urls
+models
+admin
+migrations
+bot
+routers
+handlers
+states
+keyboards
+services
+middlewares
+filters
+Dockerfile
+docker-compose.yml
+requirements.txt
+.env.example
+README.md
+tests
+```
+
+Every import must be correct.
+
+The generated project must be internally consistent.
+
+---
+
+# 53. CODE GENERATION ORDER
+
+Generate the project in this order:
+
+1. Project architecture
+2. Django settings
+3. Database models
+4. Django Admin
+5. Migrations
+6. Bot configuration
+7. FSM states
+8. Keyboards
+9. Services
+10. Middlewares
+11. Routers
+12. Handlers
+13. Notification system
+14. Docker
+15. Environment configuration
+16. Tests
+17. README
+
+After generating the code, perform a logical consistency check.
+
+Check for:
+
+* Missing imports
+* Wrong module paths
+* Circular imports
+* Async/sync problems
+* Incorrect Aiogram 3.x syntax
+* Incorrect Django settings
+* Database relationship errors
+* FSM transition errors
+* Keyboard errors
+* Callback data errors
+* Missing migrations
+* Docker configuration errors
+* Environment variable errors
+
+Fix all identified issues before presenting the final result.
+
+---
+
+# 54. PRODUCTION STANDARD
+
+The final application must be designed as a system that could realistically be deployed to a VPS/server.
+
+Prioritize:
+
+```text
+Security
+Maintainability
+Scalability
+Database integrity
+Async performance
+Error handling
+Logging
+Testability
+Clean architecture
+Admin usability
+```
+
+Do not optimize for minimum code length.
+
+Optimize for **production quality and maintainability**.
+
+---
+
+# 55. FINAL EXPECTATION
+
+The final result should be a complete **SESPORT Telegram consumer-protection platform** built with:
+
+```text
+Python 3.11+
+Django 5.x
+Django Admin
+Aiogram 3.x
+Asyncio
+FSM
+PostgreSQL
+Redis
+Docker
+```
+
+with a clean separation between:
+
+```text
+Telegram layer
+Business logic
+Django models
+Database
+Admin panel
+Notification system
+Infrastructure
+```
+
+The system must be extensible so that future features such as:
+
+* AI-powered complaint classification
+* Automatic store risk scoring
+* Geolocation-based store search
+* QR-code store verification
+* Advanced cashback
+* SMS notifications
+* Payment integration
+* Analytics dashboard
+* Mobile application API
+
+can be added without rewriting the existing architecture.

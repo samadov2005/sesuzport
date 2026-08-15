@@ -1,0 +1,33 @@
+# === SESPORT — Requirements (SQLite dev, Python 3.13 compatible) ===
+
+# Django
+Django==5.1.4
+
+# Aiogram (Telegram Bot) — let pip resolve aiohttp version
+aiogram==3.15.0
+magic-filter==1.0.12
+
+# Redis (FSM Storage — optional for dev)
+redis>=5.0.0
+
+# Async
+aiofiles==24.1.0
+
+# Environment
+python-dotenv==1.0.1
+
+# ASGI / WSGI Server
+uvicorn[standard]>=0.30.0
+gunicorn>=21.0.0
+
+# Utils
+python-dateutil>=2.9.0
+
+# Async ORM helpers
+asgiref>=3.7.0
+
+# Testing
+pytest>=8.0.0
+pytest-django>=4.8.0
+pytest-asyncio>=0.24.0
+psycopg2-binary

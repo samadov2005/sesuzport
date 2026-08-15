@@ -1,0 +1,3 @@
+"""
+SESPORT test suite setup.
+"""

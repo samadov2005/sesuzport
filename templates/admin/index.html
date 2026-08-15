@@ -1,0 +1,910 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}SESPORT — Boshqaruv paneli{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="sesport-dashboard">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="dash-header">
+    <div class="dash-title-group">
+      <h1 class="dash-title">Boshqaruv paneli</h1>
+      <p class="dash-subtitle">SESPORT — Iste'molchilarni himoya qilish milliy platformasi</p>
+    </div>
+    <div class="dash-actions">
+      <a href="/admin/complaints/complaint/add/" class="dash-btn primary">
+        <span class="btn-icon">+</span> Yangi murojaat
+      </a>
+      <a href="/admin/users/telegramuser/" class="dash-btn secondary">
+        Foydalanuvchilar
+      </a>
+    </div>
+  </div>
+
+  <!-- ── KPI Cards ──────────────────────────────────────────── -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap">
+          <span class="kpi-icon">👥</span>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-value">{{ total_users }}</div>
+          <div class="kpi-label">Jami foydalanuvchi</div>
+        </div>
+      </div>
+      <div class="kpi-sub"><span class="trend up">↑ +{{ new_users_today }}</span> bugun qo'shildi</div>
+    </div>
+
+    <div class="kpi-card purple">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap">
+          <span class="kpi-icon">📋</span>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-value">{{ total_complaints }}</div>
+          <div class="kpi-label">Jami murojaatlar</div>
+        </div>
+      </div>
+      <div class="kpi-sub"><span class="trend warn">⏳ {{ pending_complaints }}</span> kutilmoqda</div>
+    </div>
+
+    <div class="kpi-card green">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap">
+          <span class="kpi-icon">🏪</span>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-value">{{ total_stores }}</div>
+          <div class="kpi-label">Do'konlar tarmog'i</div>
+        </div>
+      </div>
+      <div class="kpi-sub"><span class="trend safe">🟢 {{ safe_stores }}</span> xavfsiz holatda</div>
+    </div>
+
+    <div class="kpi-card orange">
+      <div class="kpi-card-inner">
+        <div class="kpi-icon-wrap">
+          <span class="kpi-icon">💳</span>
+        </div>
+        <div class="kpi-data">
+          <div class="kpi-value">{{ total_cashback }}</div>
+          <div class="kpi-label">Keshbek (so'm)</div>
+        </div>
+      </div>
+      <div class="kpi-sub"><span class="trend neutral">👤 {{ cashback_accounts }}</span> hisob raqam</div>
+    </div>
+  </div>
+
+  <!-- ── Charts Row ─────────────────────────────────────────── -->
+  <div class="charts-grid">
+
+    <!-- Complaint Status Pie -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h3>Murojaatlar holati</h3>
+          <span class="chart-subtitle">Status bo'yicha taqsimot</span>
+        </div>
+        <span class="chart-badge">{{ total_complaints }} jami</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="complaintStatusChart"></canvas>
+      </div>
+      <div class="chart-legend">
+        <span class="leg pending">⏳ Kutilmoqda: <b>{{ pending_complaints }}</b></span>
+        <span class="leg review">🔍 Ko'rilmoqda: <b>{{ under_review_complaints }}</b></span>
+        <span class="leg approved">✅ Tasdiqlangan: <b>{{ approved_complaints }}</b></span>
+        <span class="leg rejected">❌ Rad etilgan: <b>{{ rejected_complaints }}</b></span>
+        <span class="leg resolved">🎯 Hal qilingan: <b>{{ resolved_complaints }}</b></span>
+      </div>
+    </div>
+
+    <!-- Store Safety Bar -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h3>Do'konlar xavfsizligi</h3>
+          <span class="chart-subtitle">Sanitariya xavfsizlik reytingi</span>
+        </div>
+        <span class="chart-badge">{{ total_stores }} jami</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="storeSafetyChart"></canvas>
+      </div>
+      <div class="chart-legend">
+        <span class="leg safe">🟢 Xavfsiz: <b>{{ green_stores }}</b></span>
+        <span class="leg warn">🟡 Ehtiyotkor: <b>{{ yellow_stores }}</b></span>
+        <span class="leg danger">🔴 Xavfli: <b>{{ red_stores }}</b></span>
+      </div>
+    </div>
+
+    <!-- Weekly Complaints Line -->
+    <div class="chart-card wide">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h3>So'nggi 7 kunlik statistika</h3>
+          <span class="chart-subtitle">Kunlik murojaatlar dinamikasi</span>
+        </div>
+      </div>
+      <div class="chart-wrap line-chart-wrap">
+        <canvas id="weeklyChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Bottom Row ─────────────────────────────────────────── -->
+  <div class="bottom-grid">
+
+    <!-- Recent Complaints -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="card-title-group">
+          <h3>So'nggi murojaatlar</h3>
+          <span class="card-subtitle">Yangi kelib tushgan shikoyatlar</span>
+        </div>
+        <a href="/admin/complaints/complaint/" class="see-all">Barchasini ko'rish →</a>
+      </div>
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Chipta ID</th>
+              <th>Foydalanuvchi</th>
+              <th>Holat</th>
+              <th>Sana</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in recent_complaints %}
+            <tr>
+              <td class="td-ticket">
+                <a href="/admin/complaints/complaint/{{ c.id }}/change/">{{ c.ticket_id }}</a>
+              </td>
+              <td>{{ c.user.full_name }}</td>
+              <td>
+                <span class="status-badge status-{{ c.status|lower }}">{{ c.get_status_display }}</span>
+              </td>
+              <td class="muted">{{ c.created_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="empty-row">Murojaatlar mavjud emas</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="card-title-group">
+          <h3>So'nggi foydalanuvchilar</h3>
+          <span class="card-subtitle">Botdan yangi ro'yxatdan o'tganlar</span>
+        </div>
+        <a href="/admin/users/telegramuser/" class="see-all">Barchasini ko'rish →</a>
+      </div>
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Ism</th>
+              <th>Rol</th>
+              <th>Username</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in recent_users %}
+            <tr>
+              <td>
+                <a href="/admin/users/telegramuser/{{ u.id }}/change/">{{ u.full_name }}</a>
+              </td>
+              <td>
+                <span class="role-badge role-{{ u.role|lower }}">{{ u.role }}</span>
+              </td>
+              <td class="muted">{% if u.username %}@{{ u.username }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="empty-row">Foydalanuvchilar mavjud emas</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Quick Links ─────────────────────────────────────────── -->
+  <div class="quick-links">
+    <div class="quick-links-header">
+      <h3>Tezkor bo'limlar</h3>
+      <span class="quick-links-subtitle">Tizim modullariga o'tish</span>
+    </div>
+    <div class="links-grid">
+      {% for app in app_list %}
+        {% for model in app.models %}
+        <a href="{{ model.admin_url }}" class="quick-link">
+          <div class="ql-info">
+            <span class="ql-app">{{ app.name }}</span>
+            <span class="ql-name">{{ model.name }}</span>
+          </div>
+          <span class="ql-arrow">→</span>
+        </a>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<style>
+.sesport-dashboard {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.dash-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-1);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
+}
+
+.dash-subtitle {
+  font-size: 13.5px;
+  color: var(--text-2);
+  margin: 0;
+  font-weight: 400;
+}
+
+.dash-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-icon {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── KPI Grid ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  transition: height 0.2s ease;
+}
+
+.kpi-card:hover::before {
+  height: 5px;
+}
+
+.kpi-card.blue::before { background: var(--accent-grd); }
+.kpi-card.purple::before { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+.kpi-card.green::before { background: linear-gradient(90deg, #16a34a, #22c55e); }
+.kpi-card.orange::before { background: linear-gradient(90deg, #ea580c, #f97316); }
+
+.kpi-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.kpi-icon-wrap {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.kpi-card:hover .kpi-icon-wrap {
+  transform: scale(1.08) rotate(3deg);
+}
+
+.kpi-icon {
+  font-size: 22px;
+}
+
+.kpi-data {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--text-2);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.kpi-sub {
+  font-size: 12px;
+  color: var(--text-3);
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trend {
+  font-weight: 700;
+}
+.trend.up { color: var(--green); }
+.trend.warn { color: var(--yellow); }
+.trend.safe { color: var(--green); }
+.trend.neutral { color: var(--text-2); }
+
+/* ── Charts Grid ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+.chart-card.wide {
+  grid-column: 1 / -1;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.chart-title-group h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 2px 0;
+}
+
+.chart-subtitle {
+  font-size: 12px;
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.chart-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--bg-card2);
+  color: var(--text-2);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+}
+
+.chart-wrap {
+  position: relative;
+  height: 220px;
+  width: 100%;
+}
+
+.line-chart-wrap {
+  height: 240px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.chart-legend .leg {
+  font-size: 11.5px;
+  color: var(--text-2);
+  background: var(--bg-card2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ── Bottom Grid ── */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+}
+
+.table-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+.table-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card2);
+}
+
+.card-title-group h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 2px 0;
+}
+
+.card-subtitle {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.see-all {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.see-all:hover {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dash-table th {
+  background: var(--bg-card2) !important;
+  color: var(--text-2) !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 12px 18px !important;
+  border-bottom: 1px solid var(--border) !important;
+  text-align: left;
+}
+
+.dash-table td {
+  padding: 12px 18px !important;
+  color: var(--text-1) !important;
+  font-size: 13px !important;
+  border-bottom: 1px solid var(--border) !important;
+  vertical-align: middle;
+}
+
+.dash-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.dash-table tbody tr:hover {
+  background: var(--table-hover) !important;
+}
+
+.dash-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.td-ticket a {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--accent) !important;
+}
+
+.muted {
+  color: var(--text-3) !important;
+  font-size: 12px !important;
+}
+
+.empty-row {
+  text-align: center;
+  color: var(--text-3) !important;
+  padding: 28px !important;
+}
+
+/* ── Quick Links ── */
+.quick-links {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.quick-links-header {
+  margin-bottom: 16px;
+}
+
+.quick-links-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 2px 0;
+}
+
+.quick-links-subtitle {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.quick-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-link:hover {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.ql-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ql-app {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-3);
+}
+
+.ql-name {
+  font-size: 13.5px;
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.ql-arrow {
+  color: var(--text-3);
+  font-size: 14px;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.quick-link:hover .ql-arrow {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+
+/* ── Responsiveness ── */
+@media (max-width: 1100px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .bottom-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .dash-header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+
+<script>
+(function() {
+  let complaintChartInstance = null;
+  let storeChartInstance = null;
+  let weeklyChartInstance = null;
+
+  function isDarkMode() {
+    const theme = document.documentElement.dataset.theme || localStorage.getItem('theme') || 'auto';
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function getChartTheme() {
+    const dark = isDarkMode();
+    return {
+      textColor: dark ? '#94a3b8' : '#475569',
+      gridColor: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(148, 163, 184, 0.2)',
+      tooltipBg: dark ? '#1c2635' : '#ffffff',
+      tooltipText: dark ? '#f1f5f9' : '#0f172a',
+      tooltipBorder: dark ? '#334155' : '#e2e8f0',
+    };
+  }
+
+  function initCharts() {
+    const theme = getChartTheme();
+
+    Chart.defaults.color = theme.textColor;
+    Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+
+    // ── 1. Complaint Status Donut ──────────────────────────────
+    const ctxComplaint = document.getElementById('complaintStatusChart');
+    if (ctxComplaint) {
+      if (complaintChartInstance) complaintChartInstance.destroy();
+      complaintChartInstance = new Chart(ctxComplaint, {
+        type: 'doughnut',
+        data: {
+          labels: ['Kutilmoqda', "Ko'rilmoqda", 'Tasdiqlandi', 'Rad etildi', 'Hal qilindi'],
+          datasets: [{
+            data: [
+              {{ pending_complaints }},
+              {{ under_review_complaints }},
+              {{ approved_complaints }},
+              {{ rejected_complaints }},
+              {{ resolved_complaints }}
+            ],
+            backgroundColor: ['#64748b', '#f59e0b', '#2563eb', '#ef4444', '#22c55e'],
+            borderWidth: isDarkMode() ? 2 : 1,
+            borderColor: isDarkMode() ? '#131b26' : '#ffffff',
+            hoverOffset: 8,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: theme.tooltipBg,
+              titleColor: theme.tooltipText,
+              bodyColor: theme.tooltipText,
+              borderColor: theme.tooltipBorder,
+              borderWidth: 1,
+              padding: 10,
+              boxPadding: 4,
+              cornerRadius: 8,
+              callbacks: {
+                label: ctx => ` ${ctx.label}: ${ctx.raw} ta`
+              }
+            }
+          },
+          animation: { duration: 700, easing: 'easeOutQuart' },
+        }
+      });
+    }
+
+    // ── 2. Store Safety Horizontal Bar ────────────────────────
+    const ctxStore = document.getElementById('storeSafetyChart');
+    if (ctxStore) {
+      if (storeChartInstance) storeChartInstance.destroy();
+      storeChartInstance = new Chart(ctxStore, {
+        type: 'bar',
+        data: {
+          labels: ['Xavfsiz 🟢', "Ehtiyotkor 🟡", 'Xavfli 🔴'],
+          datasets: [{
+            label: "Do'konlar soni",
+            data: [{{ green_stores }}, {{ yellow_stores }}, {{ red_stores }}],
+            backgroundColor: ['rgba(34, 197, 94, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(239, 68, 68, 0.85)'],
+            borderRadius: 8,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: theme.tooltipBg,
+              titleColor: theme.tooltipText,
+              bodyColor: theme.tooltipText,
+              borderColor: theme.tooltipBorder,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 8,
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: theme.gridColor },
+              ticks: { color: theme.textColor, precision: 0 }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: theme.textColor, font: { weight: '600' } }
+            }
+          },
+          animation: { duration: 800 },
+        }
+      });
+    }
+
+    // ── 3. Weekly Line Chart ──────────────────────────────────
+    const ctxWeekly = document.getElementById('weeklyChart');
+    if (ctxWeekly) {
+      if (weeklyChartInstance) weeklyChartInstance.destroy();
+      weeklyChartInstance = new Chart(ctxWeekly, {
+        type: 'line',
+        data: {
+          labels: [{% for d in weekly_labels %}'{{ d }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+          datasets: [{
+            label: 'Murojaatlar soni',
+            data: [{% for v in weekly_data %}{{ v }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#2563eb',
+            backgroundColor: isDarkMode() ? 'rgba(37, 99, 235, 0.15)' : 'rgba(37, 99, 235, 0.08)',
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#2563eb',
+            pointBorderColor: isDarkMode() ? '#131b26' : '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            borderWidth: 2.5,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: theme.tooltipBg,
+              titleColor: theme.tooltipText,
+              bodyColor: theme.tooltipText,
+              borderColor: theme.tooltipBorder,
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 8,
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: theme.gridColor },
+              ticks: { color: theme.textColor }
+            },
+            y: {
+              grid: { color: theme.gridColor },
+              ticks: { color: theme.textColor, precision: 0 },
+              beginAtZero: true,
+            }
+          },
+          animation: { duration: 900 },
+          interaction: { mode: 'index', intersect: false },
+        }
+      });
+    }
+  }
+
+  // Initialize on DOM load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCharts);
+  } else {
+    initCharts();
+  }
+
+  // Observe theme attribute changes on <html>
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+        initCharts();
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // Listen to OS color-scheme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+    initCharts();
+  });
+})();
+</script>
+{% endblock %}
