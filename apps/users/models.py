@@ -16,6 +16,12 @@ class TelegramUser(models.Model):
     phone_number = models.CharField(max_length=20, null=True, blank=True, verbose_name="Asosiy telefon raqam")
     phone_number2 = models.CharField(max_length=20, null=True, blank=True, verbose_name="Qo'shimcha telefon raqam")
     is_registered = models.BooleanField(default=False, verbose_name="Ro'yxatdan o'tgan")
+    language = models.CharField(
+        max_length=10,
+        choices=[('uz', "🇺🇿 O'zbekcha"), ('ru', '🇷🇺 Русский')],
+        default='uz',
+        verbose_name="Tanlangan til"
+    )
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.CONSUMER)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

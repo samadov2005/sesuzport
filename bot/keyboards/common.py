@@ -5,11 +5,13 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
+from bot.utils.i18n import get_btn
 
 
-def back_keyboard() -> ReplyKeyboardMarkup:
+def back_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
+    back_text = "⬅️ Orqaga" if lang == 'uz' else "⬅️ Назад"
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="⬅️ Orqaga")]],
+        keyboard=[[KeyboardButton(text=back_text)]],
         resize_keyboard=True,
     )
 
@@ -31,8 +33,17 @@ def rights_list_keyboard(rights_list: list) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def store_location_keyboard() -> ReplyKeyboardMarkup:
+def store_location_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
     """Keyboard for store search — location button, name search, and all stores."""
+    if lang == 'ru':
+        return ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="📍 Отправить мое местоположение", request_location=True)],
+                [KeyboardButton(text="🔍 Поиск по названию"), KeyboardButton(text="📋 Все магазины")],
+                [KeyboardButton(text="⬅️ Главное меню")],
+            ],
+            resize_keyboard=True,
+        )
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📍 Joylashuvimni yuborish", request_location=True)],
@@ -43,7 +54,16 @@ def store_location_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
-def store_search_cancel_keyboard() -> ReplyKeyboardMarkup:
+def store_search_cancel_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
+    if lang == 'ru':
+        return ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="📍 Отправить мое местоположение", request_location=True)],
+                [KeyboardButton(text="📋 Все магазины")],
+                [KeyboardButton(text="⬅️ Главное меню")],
+            ],
+            resize_keyboard=True,
+        )
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📍 Joylashuvimni yuborish", request_location=True)],
@@ -52,4 +72,3 @@ def store_search_cancel_keyboard() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
     )
-

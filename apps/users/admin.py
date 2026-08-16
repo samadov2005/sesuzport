@@ -7,10 +7,10 @@ from .models import TelegramUser, UserRole
 class TelegramUserAdmin(admin.ModelAdmin):
     list_display = [
         'telegram_id', 'display_name', 'username_link',
-        'phone_number', 'phone_number2',
+        'phone_number', 'phone_number2', 'language_badge',
         'role_badge', 'registration_badge', 'is_active', 'created_at',
     ]
-    list_filter = ['role', 'is_active', 'is_registered', 'created_at']
+    list_filter = ['language', 'role', 'is_active', 'is_registered', 'created_at']
     search_fields = [
         'telegram_id', 'username', 'first_name', 'last_name',
         'full_name_input', 'phone_number', 'phone_number2',
@@ -24,7 +24,7 @@ class TelegramUserAdmin(admin.ModelAdmin):
             'fields': ('telegram_id', 'username', 'first_name', 'last_name')
         }),
         ("👤 Ro'yxatdan o'tish ma'lumotlari", {
-            'fields': ('full_name_input', 'phone_number', 'phone_number2', 'is_registered')
+            'fields': ('full_name_input', 'phone_number', 'phone_number2', 'is_registered', 'language')
         }),
         ("🔐 Tizim", {
             'fields': ('role', 'is_active', 'created_at', 'last_activity')
@@ -65,6 +65,12 @@ class TelegramUserAdmin(admin.ModelAdmin):
             '<span style="background:{};color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">{}</span>',
             color, label
         )
+
+    @admin.display(description='Til')
+    def language_badge(self, obj):
+        if obj.language == 'ru':
+            return format_html('<span>🇷🇺 Русский</span>')
+        return format_html('<span>🇺🇿 O\'zbekcha</span>')
 
     @admin.display(description="Ro'yxat")
     def registration_badge(self, obj):

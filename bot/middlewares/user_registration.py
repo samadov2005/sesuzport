@@ -34,13 +34,17 @@ class UserRegistrationMiddleware(BaseMiddleware):
                 )
                 if not created:
                     telegram_user.last_activity = timezone.now()
+                    update_fields = ['last_activity']
                     if user.username != telegram_user.username:
                         telegram_user.username = user.username
+                        update_fields.append('username')
                     if user.first_name != telegram_user.first_name:
                         telegram_user.first_name = user.first_name
+                        update_fields.append('first_name')
                     if user.last_name != telegram_user.last_name:
                         telegram_user.last_name = user.last_name
-                    telegram_user.save()
+                        update_fields.append('last_name')
+                    telegram_user.save(update_fields=update_fields)
                 return telegram_user
 
             db_user = await get_or_create_user()

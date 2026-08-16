@@ -31,6 +31,7 @@ from bot.services.notification_service import set_bot_instance
 
 # Import all routers
 from bot.routers import start, registration, admin, consumer, entrepreneur, complaints, stores, cashback, rights, support, common
+from bot.routers import settings
 
 # Configure logging
 logging.basicConfig(
@@ -84,6 +85,7 @@ async def main() -> None:
     dp.include_router(cashback.router)
     dp.include_router(rights.router)
     dp.include_router(support.router)
+    dp.include_router(settings.router)
     dp.include_router(common.router)  # Must be last (catches unhandled)
     
     logger.info('Starting SESPORT bot...')

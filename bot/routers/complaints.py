@@ -8,6 +8,7 @@ from aiogram.fsm.context import FSMContext
 from bot.keyboards.consumer import consumer_keyboard
 from bot.keyboards.complaint import (
     cancel_keyboard,
+    complaint_reasons_keyboard,
     location_keyboard,
     complaint_detail_keyboard,
     complaints_list_keyboard,
@@ -18,12 +19,15 @@ from bot.services.complaint_service import (
     get_complaint_by_id,
     update_complaint_status_by_admin,
 )
+from bot.services.user_service import get_user_language, is_entrepreneur_user
+from bot.services.admin_service import is_admin_user
 from bot.services.notification_service import (
     notify_complaint_created,
     notify_admins_new_complaint,
     notify_complaint_status_changed,
 )
 from bot.states.complaint import ComplaintStates
+from bot.utils.i18n import get_text
 from bot.utils.formatters import (
     format_complaint_confirmation,
     format_complaint_detail,
@@ -37,42 +41,68 @@ router = Router(name='complaints_router')
 
 # ─── Start Complaint FSM ────────────────────────────────────────────────────
 
-@router.message(F.text.in_(["📝 Shikoyat qilish", "Shikoyat qilish", "/complaint", "/shikoyat"]))
+@router.message(F.text.in_(["📝 Shikoyat qilish", "📝 Подать жалобу", "Shikoyat qilish", "/complaint", "/shikoyat"]))
 async def start_complaint(message: Message, state: FSMContext) -> None:
     await state.clear()
+    lang = await get_user_language(message.from_user.id)
     await state.set_state(ComplaintStates.waiting_for_description)
     await message.answer(
-        "📝 <b>Yangi shikoyat yuborish</b>\n\n"
-        "Iltimos, mahsulot va muammo haqida batafsil ma'lumot yozing:\n"
-        "• Do'kon yoki mahsulot nomi\n"
-        "• Qanday buzilish aniqlandi (masalan, muddati o'tgan, sifatsiz)\n"
-        "• Amal qilish muddati yoki narxi\n\n"
-        "<i>Kamida 10 ta belgi yozing yoki rasmini izoh bilan yuboring.</i>",
-        reply_markup=cancel_keyboard(),
+        get_text('complaint_start', lang),
+        reply_markup=complaint_reasons_keyboard(lang),
         parse_mode="HTML",
     )
 
 
-# ─── State 1: Description ──────────────────────────────────────────────────
+# ─── State 1: Description (Text, Voice, or Reason Button) ─────────────────────
+
+@router.message(ComplaintStates.waiting_for_description, F.voice)
+async def process_description_voice(message: Message, state: FSMContext) -> None:
+    """Handle voice message description for seniors/ease-of-use."""
+    lang = await get_user_language(message.from_user.id)
+    voice_file_id = message.voice.file_id
+    duration = message.voice.duration
+    desc = f"🎙 [Ovozli xabar ({duration} soniya)]" if lang == 'uz' else f"🎙 [Голосовое сообщение ({duration} сек)]"
+    
+    await state.update_data(description=desc, voice_file_id=voice_file_id)
+    await state.set_state(ComplaintStates.waiting_for_photo)
+    
+    await message.answer(
+        "✅ <b>" + ("Ovozli xabar qabul qilindi!" if lang == 'uz' else "Голосовое сообщение принято!") + "</b>\n\n" +
+        get_text('complaint_photo_prompt', lang),
+        reply_markup=cancel_keyboard(lang),
+        parse_mode="HTML",
+    )
+
 
 @router.message(ComplaintStates.waiting_for_description, F.text)
 async def process_description_text(message: Message, state: FSMContext) -> None:
+    lang = await get_user_language(message.from_user.id)
     text = (message.text or '').strip()
 
-    if text == '❌ Bekor qilish':
+    if text in ['❌ Bekor qilish', '❌ Отмена']:
         await _cancel_complaint(message, state)
         return
 
-    if len(text) < 10:
+    # If user selected custom text option button
+    if text in ["✍️ Boshqa muammo (yozib kiritish)", "✍️ Другая причина (написать)"]:
         await message.answer(
-            "⚠️ Tavsif juda qisqa. Kamida <b>10 ta belgi</b> kiriting:",
+            get_text('complaint_custom_text_prompt', lang),
+            reply_markup=cancel_keyboard(lang),
+            parse_mode="HTML",
+        )
+        return
+
+    # Check reason buttons or custom input
+    if len(text) < 5:
+        await message.answer(
+            "⚠️ " + ("Iltimos, sababni tanlang yoki kamida 5 ta belgi yozing:" if lang == 'uz' else "Пожалуйста, выберите причину или введите не менее 5 символов:"),
             parse_mode="HTML",
         )
         return
 
     if len(text) > 3000:
         await message.answer(
-            f"⚠️ Tavsif juda uzun. Maksimal <b>3000 ta belgi</b> (hozir {len(text)} ta).",
+            f"⚠️ " + (f"Tavsif juda uzun. Maksimal 3000 ta belgi (hozir {len(text)} ta)." if lang == 'uz' else f"Слишком длинный текст. Максимум 3000 символов (сейчас {len(text)})."),
             parse_mode="HTML",
         )
         return
@@ -80,37 +110,34 @@ async def process_description_text(message: Message, state: FSMContext) -> None:
     await state.update_data(description=text)
     await state.set_state(ComplaintStates.waiting_for_photo)
     await message.answer(
-        "📸 <b>Mahsulot rasmi</b>\n\n"
-        "Endi mahsulot yoki chekning rasmini yuboring.\n"
-        "Rasmda mahsulot holati yoki amal qilish muddati aniq ko'rinsin.",
-        reply_markup=cancel_keyboard(),
+        get_text('complaint_photo_prompt', lang),
+        reply_markup=cancel_keyboard(lang),
         parse_mode="HTML",
     )
 
 
 @router.message(ComplaintStates.waiting_for_description, F.photo)
 async def process_description_with_photo(message: Message, state: FSMContext) -> None:
-    """Handle case where user sends photo with caption at the start."""
+    """Handle case where user sends photo with caption directly at start."""
+    lang = await get_user_language(message.from_user.id)
     caption = (message.caption or '').strip()
     photo_id = message.photo[-1].file_id
 
-    if len(caption) >= 10:
-        # User provided both photo and description in caption
+    if len(caption) >= 5:
+        # Both photo and description given in caption
         await state.update_data(description=caption, photo_file_id=photo_id)
         await state.set_state(ComplaintStates.waiting_for_location)
         await message.answer(
-            "📍 <b>Do'kon joylashuvi</b>\n\n"
-            "Mahsulot sotib olingan do'kon joylashuvini (GPS) yuboring.\n"
-            "Telegram Desktop yoki veb foydalanuvchilari uchun standart tugma ham mavjud:",
-            reply_markup=location_keyboard(),
+            get_text('complaint_location_prompt', lang),
+            reply_markup=location_keyboard(lang),
             parse_mode="HTML",
         )
     else:
-        # Photo provided, but need description
+        # Photo provided, now ask for description
         await state.update_data(photo_file_id=photo_id)
         await message.answer(
-            "📸 Rasm qabul qilindi!\n\n"
-            "Endi iltimos, <b>muammo tavsifini</b> yozib yuboring (kamida 10 ta belgi):",
+            "📸 " + ("Rasm qabul qilindi!\n\nEndi muammoni tanlang yoki yozing:" if lang == 'uz' else "Фото принято!\n\nТеперь выберите причину или напишите:"),
+            reply_markup=complaint_reasons_keyboard(lang),
             parse_mode="HTML",
         )
 
@@ -119,52 +146,52 @@ async def process_description_with_photo(message: Message, state: FSMContext) ->
 
 @router.message(ComplaintStates.waiting_for_photo, F.photo)
 async def process_photo(message: Message, state: FSMContext) -> None:
+    lang = await get_user_language(message.from_user.id)
     photo_id = message.photo[-1].file_id
     await state.update_data(photo_file_id=photo_id)
     await state.set_state(ComplaintStates.waiting_for_location)
     await message.answer(
-        "📍 <b>Do'kon joylashuvi</b>\n\n"
-        "Mahsulot xarid qilingan do'konning GPS joylashuvini yuboring.\n\n"
-        "Quyidagi tugmalardan birini tanlang:",
-        reply_markup=location_keyboard(),
+        get_text('complaint_location_prompt', lang),
+        reply_markup=location_keyboard(lang),
         parse_mode="HTML",
     )
 
 
 @router.message(ComplaintStates.waiting_for_photo, F.document)
 async def process_photo_document(message: Message, state: FSMContext) -> None:
+    lang = await get_user_language(message.from_user.id)
     if message.document.mime_type and message.document.mime_type.startswith('image/'):
         photo_id = message.document.file_id
         await state.update_data(photo_file_id=photo_id)
         await state.set_state(ComplaintStates.waiting_for_location)
         await message.answer(
-            "📍 <b>Do'kon joylashuvi</b>\n\n"
-            "Mahsulot xarid qilingan do'konning GPS joylashuvini yuboring:",
-            reply_markup=location_keyboard(),
+            get_text('complaint_location_prompt', lang),
+            reply_markup=location_keyboard(lang),
             parse_mode="HTML",
         )
     else:
         await message.answer(
-            "⚠️ Iltimos, faqat rasm faylini yuboring.",
+            "⚠️ " + ("Iltimos, faqat rasm faylini yuboring." if lang == 'uz' else "Пожалуйста, отправьте файл изображения."),
             parse_mode="HTML",
         )
 
 
-@router.message(ComplaintStates.waiting_for_photo, F.text == '❌ Bekor qilish')
+@router.message(ComplaintStates.waiting_for_photo, F.text.in_(['❌ Bekor qilish', '❌ Отмена']))
 async def cancel_at_photo(message: Message, state: FSMContext) -> None:
     await _cancel_complaint(message, state)
 
 
 @router.message(ComplaintStates.waiting_for_photo)
 async def process_photo_invalid(message: Message) -> None:
+    lang = await get_user_language(message.from_user.id)
     await message.answer(
-        "⚠️ Iltimos, mahsulot <b>rasmini</b> yuboring yoki «❌ Bekor qilish» tugmasini bosing.",
-        reply_markup=cancel_keyboard(),
+        "⚠️ " + ("Iltimos, mahsulot <b>rasmini</b> yuboring yoki «❌ Bekor qilish» tugmasini bosing." if lang == 'uz' else "Пожалуйста, отправьте <b>фото</b> товара или нажмите «❌ Отмена»."),
+        reply_markup=cancel_keyboard(lang),
         parse_mode="HTML",
     )
 
 
-# ─── State 3: Location ────────────────────────────────────────────────────
+# ─── State 3: Location (Mandatory Real GPS Check) ──────────────────────────
 
 @router.message(ComplaintStates.waiting_for_location, F.location)
 async def process_location_gps(message: Message, state: FSMContext) -> None:
@@ -176,24 +203,23 @@ async def process_location_gps(message: Message, state: FSMContext) -> None:
     )
 
 
-@router.message(ComplaintStates.waiting_for_location, F.text == '❌ Bekor qilish')
+@router.message(ComplaintStates.waiting_for_location, F.text.in_(['❌ Bekor qilish', '❌ Отмена']))
 async def cancel_at_location(message: Message, state: FSMContext) -> None:
     await _cancel_complaint(message, state)
 
 
 @router.message(ComplaintStates.waiting_for_location)
 async def process_location_invalid(message: Message) -> None:
+    lang = await get_user_language(message.from_user.id)
     await message.answer(
-        "🛡️ <b>Xavfsizlik talabi:</b>\n\n"
-        "Soxta murojaatlarning oldini olish uchun shikoyat faqat <b>aynan o'sha do'konda turgan joyingizdan</b> "
-        "yuborilishi shart. Masofadan turib yoki qo'lda boshqa joyni tanlash taqiqlangan.\n\n"
-        "Iltimos, pastdagi <b>«📍 Haqiqiy GPS joylashuvni yuborish»</b> tugmasini bosing:",
-        reply_markup=location_keyboard(),
+        get_text('complaint_location_prompt', lang),
+        reply_markup=location_keyboard(lang),
         parse_mode="HTML",
     )
 
 
 async def _finalize_complaint(message: Message, state: FSMContext, latitude: float, longitude: float) -> None:
+    lang = await get_user_language(message.from_user.id)
     data = await state.get_data()
     description = data.get('description', 'Tavsif berilmagan')
     photo_file_id = data.get('photo_file_id', '')
@@ -216,9 +242,11 @@ async def _finalize_complaint(message: Message, state: FSMContext, latitude: flo
     except Exception as e:
         logger.error(f"Failed to create complaint for user {message.from_user.id}: {e}", exc_info=True)
         await state.clear()
+        is_admin = await is_admin_user(message.from_user.id)
+        is_ent = await is_entrepreneur_user(message.from_user.id)
         await message.answer(
-            "⚠️ Murojaatni saqlashda texnik xatolik yuz berdi. Iltimos, qayta urinib ko'ring.",
-            reply_markup=consumer_keyboard(),
+            "⚠️ " + ("Murojaatni saqlashda texnik xatolik yuz berdi. Iltimos, qayta urinib ko'ring." if lang == 'uz' else "Произошла техническая ошибка. Пожалуйста, попробуйте снова."),
+            reply_markup=consumer_keyboard(is_admin=is_admin, is_entrepreneur=is_ent, lang=lang),
         )
         return
 
@@ -230,7 +258,13 @@ async def _finalize_complaint(message: Message, state: FSMContext, latitude: flo
         latitude=float(complaint.latitude),
         longitude=float(complaint.longitude),
     )
-    await message.answer(confirm_text, reply_markup=consumer_keyboard(), parse_mode="HTML")
+    is_admin = await is_admin_user(message.from_user.id)
+    is_ent = await is_entrepreneur_user(message.from_user.id)
+    await message.answer(
+        confirm_text,
+        reply_markup=consumer_keyboard(is_admin=is_admin, is_entrepreneur=is_ent, lang=lang),
+        parse_mode="HTML",
+    )
 
     # 1. Notify user
     try:
@@ -238,7 +272,7 @@ async def _finalize_complaint(message: Message, state: FSMContext, latitude: flo
     except Exception as e:
         logger.warning(f"User confirmation notification error: {e}")
 
-    # 2. Notify all admins with photo + action buttons
+    # 2. Notify all admins with photo/voice + action buttons
     try:
         await notify_admins_new_complaint(complaint.id)
     except Exception as e:
@@ -298,36 +332,47 @@ async def admin_status_callback(callback: CallbackQuery) -> None:
 
 # ─── My Complaints ────────────────────────────────────────────────────────
 
-@router.message(F.text.in_(["📁 Mening murojaatlarim", "Mening murojaatlarim", "/my_complaints"]))
+@router.message(F.text.in_(["📁 Mening murojaatlarim", "📁 Мои обращения", "Mening murojaatlarim", "/my_complaints"]))
 async def my_complaints(message: Message) -> None:
+    lang = await get_user_language(message.from_user.id)
+    is_admin = await is_admin_user(message.from_user.id)
+    is_ent = await is_entrepreneur_user(message.from_user.id)
+
     try:
         complaints, total_pages = await get_user_complaints(message.from_user.id, page=1)
     except Exception as e:
         logger.error(f"My complaints error for {message.from_user.id}: {e}")
-        await message.answer("⚠️ Murojaatlarni olishda xatolik yuz berdi.")
+        await message.answer("⚠️ " + ("Murojaatlarni olishda xatolik yuz berdi." if lang == 'uz' else "Ошибка при получении обращений."))
         return
 
     if not complaints:
-        await message.answer(
+        text = (
             "📁 <b>Mening murojaatlarim</b>\n\nSizda hali yuborilgan murojaatlar yo'q.\n\n"
-            "📝 Yangi murojaat yuborish uchun quyidagi «📝 Shikoyat qilish» tugmasini bosing.",
-            reply_markup=consumer_keyboard(),
+            "📝 Yangi murojaat yuborish uchun quyidagi «📝 Shikoyat qilish» tugmasini bosing."
+            if lang == 'uz' else
+            "📁 <b>Мои обращения</b>\n\nУ вас пока нет отправленных обращений.\n\n"
+            "📝 Чтобы отправить жалобу, нажмите «📝 Подать жалобу» ниже."
+        )
+        await message.answer(
+            text,
+            reply_markup=consumer_keyboard(is_admin=is_admin, is_entrepreneur=is_ent, lang=lang),
             parse_mode="HTML",
         )
         return
 
-    text = _build_complaints_text(complaints, page=1, total_pages=total_pages)
-    kb = complaints_list_keyboard(complaints, 1, total_pages)
+    text = _build_complaints_text(complaints, page=1, total_pages=total_pages, lang=lang)
+    kb = complaints_list_keyboard(complaints, 1, total_pages, lang=lang)
     await message.answer(text, reply_markup=kb, parse_mode="HTML")
 
 
 @router.callback_query(F.data.startswith("complaints_page_"))
 async def complaints_page(callback: CallbackQuery) -> None:
+    lang = await get_user_language(callback.from_user.id)
     page = int(callback.data.split('_')[2])
     try:
         complaints, total_pages = await get_user_complaints(callback.from_user.id, page=page)
-        text = _build_complaints_text(complaints, page=page, total_pages=total_pages)
-        kb = complaints_list_keyboard(complaints, page, total_pages)
+        text = _build_complaints_text(complaints, page=page, total_pages=total_pages, lang=lang)
+        kb = complaints_list_keyboard(complaints, page, total_pages, lang=lang)
         await callback.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
         await callback.answer()
     except Exception as e:
@@ -337,16 +382,17 @@ async def complaints_page(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("complaint_detail_"))
 async def complaint_detail_cb(callback: CallbackQuery) -> None:
+    lang = await get_user_language(callback.from_user.id)
     complaint_id = int(callback.data.split('_')[2])
     try:
         c = await get_complaint_by_id(complaint_id, callback.from_user.id)
         if not c:
-            await callback.answer("Murojaat topilmadi.")
+            await callback.answer("Murojaat topilmadi." if lang == 'uz' else "Обращение не найдено.")
             return
         text = format_complaint_detail(c)
         await callback.message.answer(
             text,
-            reply_markup=complaint_detail_keyboard(c.id),
+            reply_markup=complaint_detail_keyboard(c.id, lang=lang),
             parse_mode="HTML",
         )
         await callback.answer()
@@ -357,15 +403,17 @@ async def complaint_detail_cb(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("complaint_photo_"))
 async def complaint_photo_cb(callback: CallbackQuery) -> None:
+    lang = await get_user_language(callback.from_user.id)
     complaint_id = int(callback.data.split('_')[2])
     try:
         c = await get_complaint_by_id(complaint_id, callback.from_user.id)
         if not c or not c.photo_file_id:
-            await callback.answer("Rasm topilmadi.")
+            await callback.answer("Rasm topilmadi." if lang == 'uz' else "Фото не найдено.")
             return
+        caption_text = f"📷 Murojaat rasmi: <code>{c.ticket_id}</code>" if lang == 'uz' else f"📷 Фото обращения: <code>{c.ticket_id}</code>"
         await callback.message.answer_photo(
             c.photo_file_id,
-            caption=f"📷 Murojaat rasmi: <code>{c.ticket_id}</code>",
+            caption=caption_text,
             parse_mode="HTML",
         )
         await callback.answer()
@@ -376,11 +424,12 @@ async def complaint_photo_cb(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("complaint_location_"))
 async def complaint_location_cb(callback: CallbackQuery) -> None:
+    lang = await get_user_language(callback.from_user.id)
     complaint_id = int(callback.data.split('_')[2])
     try:
         c = await get_complaint_by_id(complaint_id, callback.from_user.id)
         if not c or not c.latitude:
-            await callback.answer("Joylashuv topilmadi.")
+            await callback.answer("Joylashuv topilmadi." if lang == 'uz' else "Локация не найдена.")
             return
         await callback.message.answer_location(
             latitude=float(c.latitude),
@@ -401,19 +450,27 @@ async def ignore_cb(callback: CallbackQuery) -> None:
 
 async def _cancel_complaint(message: Message, state: FSMContext) -> None:
     await state.clear()
+    lang = await get_user_language(message.from_user.id)
+    is_admin = await is_admin_user(message.from_user.id)
+    is_ent = await is_entrepreneur_user(message.from_user.id)
+    text = "❌ Murojaat bekor qilindi.\n\nAsosiy menyuga qaytdingiz." if lang == 'uz' else "❌ Обращение отменено.\n\nВы вернулись в главное меню."
     await message.answer(
-        "❌ Murojaat bekor qilindi.\n\nAsosiy menyuga qaytdingiz.",
-        reply_markup=consumer_keyboard(),
+        text,
+        reply_markup=consumer_keyboard(is_admin=is_admin, is_entrepreneur=is_ent, lang=lang),
     )
 
 
-def _build_complaints_text(complaints, page: int, total_pages: int) -> str:
-    lines = [f"📁 <b>Mening murojaatlarim</b> (sahifa {page}/{total_pages}):\n"]
+def _build_complaints_text(complaints, page: int, total_pages: int, lang: str = 'uz') -> str:
+    title = f"📁 <b>Mening murojaatlarim</b> (sahifa {page}/{total_pages}):\n" if lang == 'uz' else f"📁 <b>Мои обращения</b> (страница {page}/{total_pages}):\n"
+    lines = [title]
     for c in complaints:
+        status_label = format_complaint_status(c.status)
+        date_label = format_date(c.created_at)
         lines.append(
             f"🎫 <b>{c.ticket_id}</b>\n"
-            f"   Holat: {format_complaint_status(c.status)}\n"
-            f"   Sana: 📅 {format_date(c.created_at)}\n"
+            f"   Holat: {status_label}\n"
+            f"   Sana: 📅 {date_label}\n"
         )
-    lines.append("Batafsil ma'lumot olish uchun quyidagi tugmalardan foydalaning:")
+    hint = "Batafsil ma'lumot olish uchun quyidagi tugmalardan foydalaning:" if lang == 'uz' else "Для подробной информации нажмите кнопку ниже:"
+    lines.append(hint)
     return '\n'.join(lines)

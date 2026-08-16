@@ -1,21 +1,46 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from bot.utils.i18n import get_btn
 
 
-def cancel_keyboard() -> ReplyKeyboardMarkup:
+def cancel_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="❌ Bekor qilish")]
+            [KeyboardButton(text=get_btn('btn_cancel', lang))]
         ],
         resize_keyboard=True,
         is_persistent=True
     )
 
 
-def location_keyboard() -> ReplyKeyboardMarkup:
+def complaint_reasons_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
+    """Fast-select complaint reasons + custom input button + cancel."""
+    if lang == 'ru':
+        buttons = [
+            [KeyboardButton(text="⏳ Просроченный товар"), KeyboardButton(text="🏷 Неверная цена / Чек")],
+            [KeyboardButton(text="🧼 Нарушение санитарии"), KeyboardButton(text="🪰 Испорченный / Некачественный")],
+            [KeyboardButton(text="✍️ Другая причина (написать)")],
+            [KeyboardButton(text=get_btn('btn_cancel', lang))]
+        ]
+    else:
+        buttons = [
+            [KeyboardButton(text="⏳ Muddati o'tgan mahsulot"), KeyboardButton(text="🏷 Narx noto'g'ri / Chek bermadi")],
+            [KeyboardButton(text="🧼 Sanitariya holati yomon"), KeyboardButton(text="🪰 Sifatsiz / Aynigan mahsulot")],
+            [KeyboardButton(text="✍️ Boshqa muammo (yozib kiritish)")],
+            [KeyboardButton(text=get_btn('btn_cancel', lang))]
+        ]
+    return ReplyKeyboardMarkup(
+        keyboard=buttons,
+        resize_keyboard=True,
+        is_persistent=True
+    )
+
+
+def location_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
+    send_loc_text = "📍 Haqiqiy GPS joylashuvni yuborish" if lang == 'uz' else "📍 Отправить реальную GPS локацию"
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📍 Haqiqiy GPS joylashuvni yuborish", request_location=True)],
-            [KeyboardButton(text="❌ Bekor qilish")]
+            [KeyboardButton(text=send_loc_text, request_location=True)],
+            [KeyboardButton(text=get_btn('btn_cancel', lang))]
         ],
         resize_keyboard=True,
         is_persistent=True,
@@ -23,18 +48,20 @@ def location_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
-def complaint_detail_keyboard(complaint_id: int) -> InlineKeyboardMarkup:
+def complaint_detail_keyboard(complaint_id: int, lang: str = 'uz') -> InlineKeyboardMarkup:
+    photo_text = "📷 Rasm" if lang == 'uz' else "📷 Фото"
+    loc_text = "📍 Joylashuv" if lang == 'uz' else "📍 Локация"
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="📷 Rasm", callback_data=f"complaint_photo_{complaint_id}"),
-                InlineKeyboardButton(text="📍 Joylashuv", callback_data=f"complaint_location_{complaint_id}")
+                InlineKeyboardButton(text=photo_text, callback_data=f"complaint_photo_{complaint_id}"),
+                InlineKeyboardButton(text=loc_text, callback_data=f"complaint_location_{complaint_id}")
             ]
         ]
     )
 
 
-def complaints_list_keyboard(complaints: list, page: int, total_pages: int) -> InlineKeyboardMarkup:
+def complaints_list_keyboard(complaints: list, page: int, total_pages: int, lang: str = 'uz') -> InlineKeyboardMarkup:
     buttons = []
     
     # Add a row for each complaint in this page
@@ -49,13 +76,15 @@ def complaints_list_keyboard(complaints: list, page: int, total_pages: int) -> I
     # Navigation buttons
     nav_row = []
     if page > 1:
-        nav_row.append(InlineKeyboardButton(text="⬅️ Oldingi", callback_data=f"complaints_page_{page-1}"))
+        prev_text = "⬅️ Oldingi" if lang == 'uz' else "⬅️ Назад"
+        nav_row.append(InlineKeyboardButton(text=prev_text, callback_data=f"complaints_page_{page-1}"))
 
     if total_pages > 1:
         nav_row.append(InlineKeyboardButton(text=f"📄 {page}/{total_pages}", callback_data="ignore"))
 
     if page < total_pages:
-        nav_row.append(InlineKeyboardButton(text="Keyingi ➡️", callback_data=f"complaints_page_{page+1}"))
+        next_text = "Keyingi ➡️" if lang == 'uz' else "Вперед ➡️"
+        nav_row.append(InlineKeyboardButton(text=next_text, callback_data=f"complaints_page_{page+1}"))
 
     if nav_row:
         buttons.append(nav_row)

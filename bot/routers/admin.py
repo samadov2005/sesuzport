@@ -610,4 +610,10 @@ async def admin_web_link(message: Message) -> None:
 
 @router.message(F.text == "👤 Foydalanuvchi menyusiga qaytish")
 async def admin_return_to_user(message: Message) -> None:
-    await message.answer("Asosiy foydalanuvchi menyusiga qaytdingiz.", reply_markup=role_keyboard())
+    is_admin = await is_admin_user(message.from_user.id)
+    from bot.services.user_service import is_entrepreneur_user, get_user_language
+    is_ent = await is_entrepreneur_user(message.from_user.id)
+    lang = await get_user_language(message.from_user.id)
+    text = "Asosiy foydalanuvchi menyusiga qaytdingiz." if lang == 'uz' else "Вы вернулись в главное меню."
+    await message.answer(text, reply_markup=role_keyboard(is_admin=is_admin, is_entrepreneur=is_ent, lang=lang))
+
