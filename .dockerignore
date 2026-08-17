@@ -1,0 +1,52 @@
+# ── Git / VCS ──────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+
+# ── Python ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# ── Sirlar (env_file orqali runtime'da beriladi) ───────
+.env
+.env.*
+!.env.example
+
+# ── Lokal DB va generatsiya qilinadigan fayllar ────────
+db.sqlite3
+db.sqlite3-journal
+*.log
+logs/
+media/
+staticfiles/
+static/
+
+# ── Docker/infra fayllari image ichida kerak emas ──────
+Dockerfile
+.dockerignore
+docker-compose*.yml
+deploy/
+
+# ── Hujjatlar ──────────────────────────────────────────
+README.md
+prompt.txt
+
+# ── IDE / OS ───────────────────────────────────────────
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

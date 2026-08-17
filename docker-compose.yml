@@ -1,115 +1,186 @@
-version: '3.9'
+# ============================================================
+# SESPORT — Docker Compose (production)
+#
+# ARXITEKTURA: reverse proxy va SSL termination — tashqi
+# Nginx Proxy Manager (NPM). Loyiha ichida nginx servisi YO'Q.
+#
+#   Internet ──80/443──> Nginx Proxy Manager
+#                              │  npm_network
+#                              ▼
+#                          web:8000  (Gunicorn)
+#                              │  backend
+#                        ┌─────┴─────┐
+#                        ▼           ▼
+#                     db:5432    redis:6379
+#                        ▲           ▲
+#                        └─── bot ───┘
+#
+# HECH BIR SERVIS HOST'GA PORT PUBLISH QILMAYDI.
+#
+# Ishga tushirish:
+#   docker network ls                     # NPM network nomini toping
+#   echo "NPM_NETWORK=<nom>" >> .env
+#   docker compose up -d --build
+#
+# NPM Docker'da bo'lmasa (host'da o'rnatilgan bo'lsa):
+#   docker compose -f docker-compose.yml -f docker-compose.hostport.yml up -d
+# ============================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
-  # PostgreSQL Database
+
+  # ── PostgreSQL ────────────────────────────────────────────
+  # Faqat `backend` network. Host'ga port chiqarilmagan.
   db:
     image: postgres:16-alpine
     container_name: sesport_db
     restart: unless-stopped
+    logging: *default-logging
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-sesport_db}
-      POSTGRES_USER: ${POSTGRES_USER:-sesport_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sesport_password}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB .env da belgilanishi shart}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER .env da belgilanishi shart}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env da belgilanishi shart}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sesport_user} -d ${POSTGRES_DB:-sesport_db}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
 
-  # Redis Cache + FSM Storage
+  # ── Redis (aiogram FSM storage) ───────────────────────────
+  # Faqat `backend` network. Redis'da auth yo'q — uni hech qachon
+  # host'ga yoki npm_network'ga chiqarmang.
   redis:
     image: redis:7-alpine
     container_name: sesport_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    logging: *default-logging
+    command: >
+      redis-server
+      --appendonly yes
+      --save 60 1
+      --maxmemory 256mb
+      --maxmemory-policy noeviction
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    networks:
+      - backend
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
-  # Django Web Application
+  # ── Django / Gunicorn ─────────────────────────────────────
+  # YAGONA servis npm_network'da — NPM unga `web:8000` orqali yetadi.
+  # `expose` faqat konteynerlararo; host'ga hech narsa publish qilinmaydi.
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sesport-app:latest
     container_name: sesport_web
     restart: unless-stopped
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             python manage.py shell -c \"
-             from django.contrib.auth import get_user_model;
-             import os;
-             User = get_user_model();
-             username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'admin');
-             email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@sesport.uz');
-             password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'admin123');
-             User.objects.filter(username=username).exists() or User.objects.create_superuser(username=username, email=email, password=password);
-             print('Superuser ready.')
-             \" &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"
+    init: true
+    logging: *default-logging
     env_file:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
+      # Migratsiya / collectstatic / superuser FAQAT shu servisda —
+      # bot'da o'chirilgan, aks holda parallel migratsiya race beradi.
+      RUN_MIGRATIONS: "true"
+      RUN_COLLECTSTATIC: "true"
+      CREATE_SUPERUSER: "true"
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
+    expose:
+      - "8000"
     volumes:
-      - .:/app
-      - static_volume:/app/static
+      - static_volume:/app/staticfiles
       - media_volume:/app/media
       - logs_volume:/app/logs
-    ports:
-      - "8000:8000"
+    networks:
+      - backend       # db + redis
+      - npm_network   # NPM shu yerdan `web:8000` ga yetadi
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
 
-  # Telegram Bot Service
+  # ── Telegram bot (long polling) ───────────────────────────
+  # npm_network'da EMAS — bot'ga tashqaridan kirish kerak emas.
+  # `backend` oddiy bridge (internal emas), shuning uchun bot
+  # api.telegram.org ga chiqa oladi.
   bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sesport-app:latest
     container_name: sesport_bot
     restart: unless-stopped
-    command: python -m bot.main
+    init: true
+    logging: *default-logging
+    command: ["python", "-m", "bot.main"]
     env_file:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
       USE_REDIS: "true"
+      RUN_MIGRATIONS: "false"
+      RUN_COLLECTSTATIC: "false"
+      CREATE_SUPERUSER: "false"
     volumes:
-      - .:/app
+      # media_volume ATAYLAB yo'q: bot lokal faylga yozmaydi — shikoyat
+      # rasm/ovozlari Telegram `file_id` sifatida saqlanadi
+      # (apps/complaints/models.py: photo_file_id).
       - logs_volume:/app/logs
+    networks:
+      - backend
+    # Image'dagi HTTP healthcheck bot uchun mos emas — u web server emas.
+    healthcheck:
+      disable: true
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # HTTP uchun emas — MIGRATSIYA uchun. Bot Django ORM orqali
+      # TelegramUser/Complaint jadvallariga murojaat qiladi
+      # (bot/middlewares/user_registration.py). Migratsiyani `web`
+      # bajaradi, shuning uchun bot u sog'lom bo'lgunicha kutadi —
+      # aks holda birinchi /start da "relation does not exist".
       web:
-        condition: service_started
+        condition: service_healthy
 
-  # Nginx Reverse Proxy (Optional but recommended for production)
-  nginx:
-    image: nginx:alpine
-    container_name: sesport_nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - static_volume:/app/static:ro
-      - media_volume:/app/media:ro
-    depends_on:
-      - web
-    profiles:
-      - production
+networks:
+  # Ichki tarmoq: db, redis, web, bot.
+  # `internal: true` ATAYLAB qo'yilmagan — bot'ga api.telegram.org
+  # bilan ishlash uchun tashqi chiqish (egress) kerak.
+  # Xavfsizlik host'ga port publish qilmaslik bilan ta'minlanadi.
+  backend:
+    driver: bridge
+    name: sesport_backend
+
+  # Nginx Proxy Manager allaqachon yaratgan tarmoq.
+  # Nomini aniqlash:
+  #   docker inspect <npm-container> \
+  #     --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}'
+  # So'ng .env ga: NPM_NETWORK=<topilgan-nom>
+  npm_network:
+    external: true
+    name: ${NPM_NETWORK:-npm_network}
 
 volumes:
   postgres_data:

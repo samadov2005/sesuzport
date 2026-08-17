@@ -58,35 +58,68 @@ ASGI_APPLICATION = 'config.asgi.application'
 # ----------------------------------------------------------------
 # DATABASE — SQLite by default (change to PostgreSQL in production)
 # ----------------------------------------------------------------
-_db_url = os.environ.get('DATABASE_URL', '')
+_db_url = os.environ.get('DATABASE_URL', '').strip()
 
-if _db_url and _db_url.startswith('postgresql'):
-    # PostgreSQL (production): requires psycopg2-binary
-    import re
-    match = re.match(
-        r'postgresql://(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^:]+):(?P<port>\d+)/(?P<name>.+)',
-        _db_url,
-    )
-    if match:
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': match.group('name'),
-                'USER': match.group('user'),
-                'PASSWORD': match.group('password'),
-                'HOST': match.group('host'),
-                'PORT': match.group('port'),
-                'CONN_MAX_AGE': 600,
-            }
+if _db_url:
+    # PostgreSQL (production): psycopg2-binary talab qilinadi.
+    #
+    # Bu yerda ataylab regex emas, urllib.parse ishlatilgan:
+    # regex `@` yoki `/` belgisi bo'lgan parollarni va `postgres://`
+    # sxemasini tanimay qolardi va natijada konteyner JIMGINA SQLite'ga
+    # tushib ketardi — ya'ni har bir deploy'da ma'lumotlar yo'qolardi.
+    # Endi noto'g'ri URL jim qolmasdan, xato bilan to'xtatadi.
+    from urllib.parse import urlparse, unquote
+
+    _parsed = urlparse(_db_url)
+
+    if _parsed.scheme not in ('postgres', 'postgresql'):
+        raise ValueError(
+            f"DATABASE_URL sxemasi qo'llab-quvvatlanmaydi: '{_parsed.scheme}'. "
+            "Kutilgan format: postgresql://user:password@host:5432/dbname "
+            "(SQLite uchun DATABASE_URL ni umuman bermang)."
+        )
+    if not _parsed.hostname or not _parsed.path.lstrip('/'):
+        raise ValueError(
+            "DATABASE_URL noto'g'ri: host yoki baza nomi topilmadi. "
+            "Format: postgresql://user:password@host:5432/dbname"
+        )
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': _parsed.path.lstrip('/'),
+            # Parolda @ : / # kabi belgilar bo'lsa, ular URL'da
+            # %40, %3A ... ko'rinishida yoziladi — unquote ochib beradi.
+            'USER': unquote(_parsed.username or ''),
+            'PASSWORD': unquote(_parsed.password or ''),
+            'HOST': _parsed.hostname,
+            'PORT': str(_parsed.port or 5432),
+            'CONN_MAX_AGE': 600,
+            'CONN_HEALTH_CHECKS': True,
+            'OPTIONS': {'connect_timeout': 10},
         }
-    else:
-        # Fallback to SQLite if URL is malformed
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
+    }
+elif os.environ.get('POSTGRES_HOST', '').strip():
+    # DATABASE_URL berilmagan, lekin alohida POSTGRES_* o'zgaruvchilari bor.
+    #
+    # Bu yo'l AFZAL: bu yerda percent-encoding umuman kerak emas, ya'ni
+    # parolda @ : / # bo'lsa ham hech narsani kodlash shart emas.
+    # DATABASE_URL ishlatilganda esa POSTGRES_PASSWORD (xom) va URL
+    # ichidagi parol (kodlangan) bir-biriga mos kelmay qolishi mumkin —
+    # bu "password authentication failed" xatosining eng keng tarqalgan sababi.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB', ''),
+            'USER': os.environ.get('POSTGRES_USER', ''),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'HOST': os.environ['POSTGRES_HOST'].strip(),
+            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            'CONN_MAX_AGE': 600,
+            'CONN_HEALTH_CHECKS': True,
+            'OPTIONS': {'connect_timeout': 10},
         }
+    }
 else:
     # SQLite (development default)
     DATABASES = {

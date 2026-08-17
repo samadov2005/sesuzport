@@ -121,11 +121,14 @@ sesport/
 ├── requirements.txt             # Python kutubxonalar
 ├── .env                         # Konfiguratsiya (gitda yo'q!)
 ├── .env.example                 # Namuna konfiguratsiya
-├── Dockerfile                   # Docker image
-├── docker-compose.yml           # Servislar: bot, db, redis, nginx
-├── nginx.conf                   # Nginx konfiguratsiyasi
+├── Dockerfile                   # Docker image (multi-stage, non-root)
+├── .dockerignore                # .env / db.sqlite3 / .git image'ga kirmaydi
+├── docker-compose.yml           # Servislar: web, bot, db, redis
+├── docker-compose.hostport.yml  # Overlay: NPM Docker'da bo'lmasa
+├── docker/entrypoint.sh         # DB kutish -> migrate -> collectstatic -> superuser
+├── deploy/nginx-standalone/     # ARXIV: NPM'siz variant uchun nginx configlari
 ├── pytest.ini                   # Test konfiguratsiyasi
-├── db.sqlite3                   # SQLite DB (dev)
+├── db.sqlite3                   # SQLite DB (dev) — git'dan chiqarilishi kerak
 │
 ├── config/                      # Django konfiguratsiya
 │   ├── settings/
@@ -599,30 +602,155 @@ LOG_LEVEL=INFO
 
 ---
 
-## 🐳 Docker bilan ishga tushirish
+## 🐳 Docker deploy (Nginx Proxy Manager bilan)
 
-```bash
-# 1. .env faylini to'ldiring
-cp .env.example .env
-nano .env   # BOT_TOKEN va boshqalarni yozing
+> **Python 3.12+ talab qilinadi.** Kod PEP 701 f-stringlaridan foydalanadi
+> (masalan `bot/routers/admin.py:171`), shu sabab Docker image `python:3.13-slim`
+> asosida qurilgan. Python 3.11 da `SyntaxError` beradi.
 
-# 2. Konteynerlarni qurish va ishga tushirish
-docker compose up --build
+### Arxitektura
 
-# 3. Migratsiya va seed (birinchi marta)
-docker compose exec bot python manage.py migrate
-docker compose exec bot python manage.py seed --mode real
-docker compose exec bot python manage.py createsuperuser
+```
+Internet
+   │ 80 / 443
+   ▼
+Nginx Proxy Manager        ← SSL termination shu yerda
+   │ npm_network
+   ▼
+web:8000  (Django + Gunicorn + WhiteNoise)
+   │ backend
+   ├──► db:5432    (PostgreSQL 16)
+   └──► redis:6379 (FSM storage)
+             ▲
+             └──── bot  (Aiogram long polling)
 ```
 
-**Servislar:**
+Loyiha ichida **nginx servisi yo'q** va **hech bir konteyner host'ga port
+publish qilmaydi**. `db`, `redis`, `bot` faqat `backend` tarmog'ida —
+NPM ularga yeta olmaydi.
 
-| Servis | Port | Tavsif |
-|--------|------|--------|
-| `nginx` | 80, 443 | Reverse proxy |
-| `bot` | — | Django + Telegram bot |
-| `db` | 5432 | PostgreSQL |
-| `redis` | 6379 | FSM storage |
+### 1. NPM network nomini aniqlash
+
+```bash
+docker ps --format '{{.Names}}' | grep -i proxy
+docker inspect <npm-container> \
+  --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}'
+```
+
+### 2. `.env` tayyorlash
+
+```bash
+cp .env.example .env
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+nano .env
+```
+
+Majburiy maydonlar:
+
+| O'zgaruvchi | Izoh |
+|---|---|
+| `SECRET_KEY` | Bo'sh yoki shablon bo'lsa konteyner ishga tushmaydi |
+| `POSTGRES_PASSWORD` | **Xom** parol — kodlash kerak emas |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_HOST=db` | Django shulardan DB config quradi |
+| `BOT_TOKEN` | BotFather'dan |
+| `ALLOWED_HOSTS` | `example.com,www.example.com` — sxemasiz |
+| `CSRF_TRUSTED_ORIGINS` | `https://example.com` — **sxema bilan** |
+| `NPM_NETWORK` | 1-qadamda topilgan nom |
+
+> `DATABASE_URL` ni **bo'sh qoldiring**. U ishlatilsa, parol URL ichida
+> percent-encoded (`@`→`%40`), `POSTGRES_PASSWORD` da esa xom bo'lishi kerak —
+> mos kelmasa `password authentication failed` beradi.
+
+### 3. Ishga tushirish
+
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f web
+```
+
+Migratsiya, `collectstatic` va superuser yaratish **avtomatik** —
+`docker/entrypoint.sh` ularni faqat `web` servisida bajaradi (idempotent).
+
+### 4. Nginx Proxy Manager sozlamasi
+
+**Proxy Hosts → Add Proxy Host → Details:**
+
+| Maydon | Qiymat |
+|---|---|
+| Domain Names | `sizning-domen.uz` |
+| Scheme | `http` |
+| Forward Hostname / IP | `web` |
+| Forward Port | `8000` |
+| Cache Assets | OFF (WhiteNoise o'zi keshlaydi) |
+| Block Common Exploits | ON |
+| Websockets Support | ON |
+
+**SSL tab:** sertifikat tanlang → `Force SSL` ON → `HTTP/2` ON → `HSTS` ON
+
+**Advanced tab:**
+```nginx
+client_max_body_size 20m;
+```
+
+Sertifikat olingandan keyin `.env` da `ENABLE_HTTPS=true` qiling va
+`docker compose up -d web` bilan qayta ishga tushiring.
+
+> NPM **Docker'da bo'lmasa** (host'ga o'rnatilgan bo'lsa) `web` service
+> nomini topa olmaydi. U holda:
+> ```bash
+> docker compose -f docker-compose.yml -f docker-compose.hostport.yml up -d
+> ```
+> va NPM'da `Forward Hostname/IP: 127.0.0.1`, `Forward Port: 2020`.
+
+### 5. Portlar
+
+| Port | Kim ochadi | Internetdan |
+|---|---|---|
+| 80, 443 | Nginx Proxy Manager | ✅ ochiq |
+| 8000 | `web` (`expose`) | ❌ yopiq |
+| 5432 | `db` | ❌ yopiq |
+| 6379 | `redis` | ❌ yopiq |
+
+**Firewall (UFW):**
+
+```bash
+sudo ufw default deny incoming
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+# 5432, 6379, 8000, 2020 — HECH QACHON ochilmasin
+```
+
+> ⚠️ Docker `iptables` qoidalarini UFW'dan **oldin** qo'yadi. Shu sababli
+> compose'da `"2020:8000"` deb yozish UFW `deny` bo'lsa ham portni
+> internetga ochib yuboradi. Loyiha shuning uchun hech qanday port
+> publish qilmaydi; `hostport` overlay esa qat'iy `127.0.0.1:` bilan bog'laydi.
+
+### 6. Backup
+
+```bash
+# Zaxira (host'ga yoziladi, konteyner ichiga emas)
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  > backup_$(date +%F).sql
+
+# Tiklash
+cat backup_2026-08-17.sql | \
+  docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+### 7. Foydali buyruqlar
+
+```bash
+docker compose logs -f web
+docker compose logs -f bot
+docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py seed --mode real
+docker compose restart web
+docker compose down          # volume'lar saqlanadi
+docker compose down -v       # DIQQAT: bazani ham o'chiradi
+```
 
 ---
 

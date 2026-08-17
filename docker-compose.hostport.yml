@@ -1,0 +1,25 @@
+# ============================================================
+# OVERLAY — faqat Nginx Proxy Manager Docker'da BO'LMAGANDA
+#
+# Agar NPM host'ga to'g'ridan-to'g'ri o'rnatilgan bo'lsa (Docker
+# konteynerda emas), u `web` service nomini DNS orqali topa olmaydi.
+# Bu holda Django'ni FAQAT localhost'ga bog'laymiz.
+#
+# Ishlatish:
+#   docker compose -f docker-compose.yml -f docker-compose.hostport.yml up -d
+#
+# NPM Proxy Host sozlamalari:
+#   Forward Hostname/IP : 127.0.0.1
+#   Forward Port        : 2020
+#
+# DIQQAT: bu yerda ATAYLAB "127.0.0.1:2020:8000" yozilgan.
+# "2020:8000" deb yozsangiz Docker uni 0.0.0.0 ga bog'laydi va
+# Gunicorn to'g'ridan-to'g'ri internetdan ochiq bo'lib qoladi —
+# bu firewall qoidalarini ham chetlab o'tadi (Docker iptables'ga
+# o'z qoidalarini UFW'dan oldin qo'yadi).
+# ============================================================
+
+services:
+  web:
+    ports:
+      - "127.0.0.1:${WEB_LOCAL_PORT:-2020}:8000"

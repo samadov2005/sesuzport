@@ -14,9 +14,14 @@ venv.bak/
 *.log
 local_settings.py
 db.sqlite3-journal
+staticfiles/
+media/
+logs/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # IDE
 .idea/
