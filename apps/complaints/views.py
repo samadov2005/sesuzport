@@ -14,11 +14,17 @@ from django.core.files.base import ContentFile
 logger = logging.getLogger(__name__)
 
 
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+
+@xframe_options_exempt
 def camera_view(request: HttpRequest) -> HttpResponse:
     """Render the live camera WebApp page for taking on-the-spot photos."""
-    return render(request, 'camera.html', {
+    response = render(request, 'camera.html', {
         'debug': settings.DEBUG,
     })
+    response['Bypass-Tunnel-Reminder'] = '1'
+    return response
 
 
 @csrf_exempt
