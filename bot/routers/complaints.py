@@ -7,6 +7,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 
+from bot.config import get_bot_config
 from bot.keyboards.consumer import consumer_keyboard
 from bot.keyboards.complaint import (
     cancel_keyboard,
