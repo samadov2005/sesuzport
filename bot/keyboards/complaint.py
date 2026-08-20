@@ -1,5 +1,28 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    WebAppInfo,
+)
+from bot.config import get_bot_config
 from bot.utils.i18n import get_btn
+
+
+def camera_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
+    """Keyboard with dedicated WebApp button to open the live device camera only."""
+    config = get_bot_config()
+    camera_url = f"{config.webapp_url.rstrip('/')}/camera/"
+    camera_btn_text = "📸 Kamerani ochish (Jonli)" if lang == 'uz' else "📸 Открыть камеру (Онлайн)"
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=camera_btn_text, web_app=WebAppInfo(url=camera_url))],
+            [KeyboardButton(text=get_btn('btn_cancel', lang))]
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+        one_time_keyboard=True
+    )
 
 
 def cancel_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:

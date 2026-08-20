@@ -1,13 +1,16 @@
 import logging
 import re
+import os
+import json
 
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 
 from bot.keyboards.consumer import consumer_keyboard
 from bot.keyboards.complaint import (
     cancel_keyboard,
+    camera_keyboard,
     complaint_reasons_keyboard,
     location_keyboard,
     complaint_detail_keyboard,
@@ -111,69 +114,102 @@ async def process_description_text(message: Message, state: FSMContext) -> None:
     await state.set_state(ComplaintStates.waiting_for_photo)
     await message.answer(
         get_text('complaint_photo_prompt', lang),
-        reply_markup=cancel_keyboard(lang),
+        reply_markup=camera_keyboard(lang),
         parse_mode="HTML",
     )
 
 
-@router.message(ComplaintStates.waiting_for_description, F.photo)
+@router.message(ComplaintStates.waiting_for_description, F.photo | F.document)
 async def process_description_with_photo(message: Message, state: FSMContext) -> None:
-    """Handle case where user sends photo with caption directly at start."""
+    """If user uploads gallery photo at description step, reject and enforce live camera."""
     lang = await get_user_language(message.from_user.id)
     caption = (message.caption or '').strip()
-    photo_id = message.photo[-1].file_id
-
     if len(caption) >= 5:
-        # Both photo and description given in caption
-        await state.update_data(description=caption, photo_file_id=photo_id)
-        await state.set_state(ComplaintStates.waiting_for_location)
-        await message.answer(
-            get_text('complaint_location_prompt', lang),
-            reply_markup=location_keyboard(lang),
-            parse_mode="HTML",
-        )
-    else:
-        # Photo provided, now ask for description
-        await state.update_data(photo_file_id=photo_id)
-        await message.answer(
-            "📸 " + ("Rasm qabul qilindi!\n\nEndi muammoni tanlang yoki yozing:" if lang == 'uz' else "Фото принято!\n\nТеперь выберите причину или напишите:"),
-            reply_markup=complaint_reasons_keyboard(lang),
-            parse_mode="HTML",
-        )
+        await state.update_data(description=caption)
 
-
-# ─── State 2: Photo ────────────────────────────────────────────────────────
-
-@router.message(ComplaintStates.waiting_for_photo, F.photo)
-async def process_photo(message: Message, state: FSMContext) -> None:
-    lang = await get_user_language(message.from_user.id)
-    photo_id = message.photo[-1].file_id
-    await state.update_data(photo_file_id=photo_id)
-    await state.set_state(ComplaintStates.waiting_for_location)
+    await state.set_state(ComplaintStates.waiting_for_photo)
+    reject_text = (
+        "🛡️ <b>Xavfsizlik talabi:</b>\n\n"
+        "Telefon xotirasi (galereya)dan rasm yuklash taqiqlangan. "
+        "Murojaat haqqoniy bo'lishi uchun rasm faqat <b>voqea joyida jonli kamera</b> orqali olinishi shart.\n\n"
+        "👇 Pastdagi <b>«📸 Kamerani ochish (Jonli)»</b> tugmasini bosing:"
+    ) if lang == 'uz' else (
+        "🛡️ <b>Требование безопасности:</b>\n\n"
+        "Загрузка фото из галереи запрещена. "
+        "Фотография должна быть сделана исключительно через <b>онлайн камеру</b> на месте.\n\n"
+        "👇 Нажмите кнопку <b>«📸 Открыть камеру (Онлайн)»</b> ниже:"
+    )
     await message.answer(
-        get_text('complaint_location_prompt', lang),
-        reply_markup=location_keyboard(lang),
+        reject_text,
+        reply_markup=camera_keyboard(lang),
         parse_mode="HTML",
     )
 
 
-@router.message(ComplaintStates.waiting_for_photo, F.document)
-async def process_photo_document(message: Message, state: FSMContext) -> None:
+# ─── State 2: Photo (Live Camera WebApp Only) ──────────────────────────────
+
+@router.message(ComplaintStates.waiting_for_photo, F.web_app_data)
+async def process_camera_photo_webapp(message: Message, state: FSMContext) -> None:
+    """Handle photo captured from live Camera WebApp."""
     lang = await get_user_language(message.from_user.id)
-    if message.document.mime_type and message.document.mime_type.startswith('image/'):
-        photo_id = message.document.file_id
-        await state.update_data(photo_file_id=photo_id)
+    try:
+        payload = json.loads(message.web_app_data.data)
+        file_path = payload.get('file_path')
+
+        if not file_path or not os.path.exists(file_path):
+            await message.answer(
+                "⚠️ " + ("Rasm fayli topilmadi. Iltimos, kamerani ochib qayta rasmga oling:" if lang == 'uz' else "Файл не найден. Пожалуйста, откройте камеру и сделайте фото заново:"),
+                reply_markup=camera_keyboard(lang),
+            )
+            return
+
+        # Send confirmation photo to telegram chat and capture Telegram file_id
+        photo_file = FSInputFile(file_path)
+        confirm_caption = (
+            "📸 <b>Jonli kamera orqali olingan rasm qabul qilindi!</b>" if lang == 'uz' else
+            "📸 <b>Фото с онлайн камеры успешно принято!</b>"
+        )
+        sent_msg = await message.answer_photo(
+            photo=photo_file,
+            caption=confirm_caption,
+            parse_mode="HTML"
+        )
+        photo_id = sent_msg.photo[-1].file_id
+        await state.update_data(photo_file_id=photo_id, local_photo_path=file_path)
         await state.set_state(ComplaintStates.waiting_for_location)
         await message.answer(
             get_text('complaint_location_prompt', lang),
             reply_markup=location_keyboard(lang),
             parse_mode="HTML",
         )
-    else:
+    except Exception as e:
+        logger.error(f"Error processing camera webapp data: {e}", exc_info=True)
         await message.answer(
-            "⚠️ " + ("Iltimos, faqat rasm faylini yuboring." if lang == 'uz' else "Пожалуйста, отправьте файл изображения."),
-            parse_mode="HTML",
+            "⚠️ " + ("Rasmni qayta ishlashda xatolik yuz berdi. Qayta urinib ko'ring:" if lang == 'uz' else "Ошибка при обработке фото. Попробуйте еще раз:"),
+            reply_markup=camera_keyboard(lang),
         )
+
+
+@router.message(ComplaintStates.waiting_for_photo, F.photo | F.document)
+async def reject_gallery_photo_in_waiting(message: Message) -> None:
+    """Strictly reject photos uploaded from phone gallery / files."""
+    lang = await get_user_language(message.from_user.id)
+    reject_text = (
+        "🛡️ <b>Xavfsizlik talabi:</b>\n\n"
+        "Telefon xotirasi (galereya)dan rasm yuklash taqiqlangan.\n"
+        "Soxtalashtirishlarning oldini olish uchun rasm faqat <b>voqea joyida jonli kamera</b> orqali olinishi shart.\n\n"
+        "👇 Iltimos, pastdagi <b>«📸 Kamerani ochish (Jonli)»</b> tugmasini bosing:"
+    ) if lang == 'uz' else (
+        "🛡️ <b>Требование безопасности:</b>\n\n"
+        "Загрузка фото из галереи отключена.\n"
+        "Фотография должна быть сделана исключительно через <b>онлайн камеру</b> на месте.\n\n"
+        "👇 Пожалуйста, нажмите кнопку <b>«📸 Открыть камеру (Онлайн)»</b> ниже:"
+    )
+    await message.answer(
+        reject_text,
+        reply_markup=camera_keyboard(lang),
+        parse_mode="HTML",
+    )
 
 
 @router.message(ComplaintStates.waiting_for_photo, F.text.in_(['❌ Bekor qilish', '❌ Отмена']))
@@ -185,8 +221,8 @@ async def cancel_at_photo(message: Message, state: FSMContext) -> None:
 async def process_photo_invalid(message: Message) -> None:
     lang = await get_user_language(message.from_user.id)
     await message.answer(
-        "⚠️ " + ("Iltimos, mahsulot <b>rasmini</b> yuboring yoki «❌ Bekor qilish» tugmasini bosing." if lang == 'uz' else "Пожалуйста, отправьте <b>фото</b> товара или нажмите «❌ Отмена»."),
-        reply_markup=cancel_keyboard(lang),
+        "⚠️ " + ("Iltimos, pastdagi <b>«📸 Kamerani ochish (Jonli)»</b> tugmasini bosing yoki «❌ Bekor qilish»ni tanlang." if lang == 'uz' else "Пожалуйста, нажмите <b>«📸 Открыть камеру (Онлайн)»</b> или выберите «❌ Отмена»."),
+        reply_markup=camera_keyboard(lang),
         parse_mode="HTML",
     )
 

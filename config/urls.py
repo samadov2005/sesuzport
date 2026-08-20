@@ -2,9 +2,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponse
+from django.views.generic import RedirectView
 
 # Import custom admin site and auto-register all models to it
 from config.admin import sesport_admin
+from apps.complaints.views import camera_view, upload_camera_photo
 
 # Auto-discover and register all models from the default admin into sesport_admin
 admin.autodiscover()
@@ -13,9 +16,6 @@ for model, model_admin in admin.site._registry.items():
         sesport_admin.register(model, type(model_admin))
     except Exception:
         pass  # Already registered
-
-from django.views.generic import RedirectView
-from django.http import HttpResponse
 
 
 def healthz(request):
@@ -28,6 +28,8 @@ urlpatterns = [
     path('healthz/', healthz, name='healthz'),
     path('health/', healthz),  # alias
     path('admin/', sesport_admin.urls),
+    path('camera/', camera_view, name='live_camera'),
+    path('api/upload-camera/', upload_camera_photo, name='upload_camera_photo'),
 ]
 
 if settings.DEBUG:
@@ -35,17 +37,6 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 elif getattr(settings, 'SERVE_MEDIA_FILES', False):
-    # Production'da /media/ ni Django orqali berish — faqat .env da
-    # SERVE_MEDIA_FILES=true bo'lganda yoqiladi (standart holatda o'chiq).
-    #
-    # Loyihada nginx servisi yo'q (reverse proxy — tashqi NPM), shuning
-    # uchun media'ni yo shu yerdan, yo NPM "Custom location" orqali
-    # berish kerak.
-    #
-    # XAVFSIZLIK: yuklangan .html/.svg/.js fayl brauzerda bajarilsa
-    # stored XSS bo'ladi. Shu sababli xavfli kengaytmalar majburan
-    # yuklab olinadigan qilib (attachment) va text/plain sifatida
-    # beriladi.
     import posixpath
     from django.urls import re_path
     from django.views.static import serve as _django_serve

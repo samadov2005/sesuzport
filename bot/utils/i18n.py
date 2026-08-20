@@ -84,12 +84,14 @@ MESSAGES: Dict[str, Dict[str, str]] = {
     },
     'complaint_photo_prompt': {
         'uz': (
-            "📸 <b>Mahsulot yoki chek rasmini yuboring:</b>\n\n"
-            "Muddati o'tgan sanasi yoki sifatsiz qismi rasmda aniq ko'rinsin."
+            "📸 <b>Mahsulotning holati va yaroqlilik muddatini rasmga oling:</b>\n\n"
+            "🛡️ <i>Xavfsizlik talabi: Soxtalashtirish va eski rasmlarni yuklashning oldini olish uchun rasm faqat <b>jonli kamera</b> orqali qabul qilinadi. Telefon xotirasi (galereya)dan yuklash taqiqlangan.</i>\n\n"
+            "👇 Pastdagi <b>«📸 Kamerani ochish (Jonli)»</b> tugmasini bosing:"
         ),
         'ru': (
-            "📸 <b>Отправьте фото товара или чека:</b>\n\n"
-            "Сфотографируйте так, чтобы было видно срок годности или дефект."
+            "📸 <b>Сделайте снимок товара и срока годности на месте:</b>\n\n"
+            "🛡️ <i>Требование безопасности: Во избежание фальсификаций фото принимается только через <b>онлайн камеру</b>. Загрузка из галереи отключена.</i>\n\n"
+            "👇 Нажмите кнопку <b>«📸 Открыть камеру (Онлайн)»</b> ниже:"
         ),
     },
     'complaint_location_prompt': {

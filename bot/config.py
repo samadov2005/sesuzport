@@ -10,6 +10,7 @@ class BotConfig:
     webhook_url: str | None
     webhook_secret: str | None
     redis_url: str
+    webapp_url: str
     
 def get_bot_config() -> BotConfig:
     token = os.getenv('BOT_TOKEN')
@@ -20,4 +21,6 @@ def get_bot_config() -> BotConfig:
         webhook_url=os.getenv('WEBHOOK_URL'),
         webhook_secret=os.getenv('WEBHOOK_SECRET'),
         redis_url=os.getenv('REDIS_URL', 'redis://localhost:6379/1'),
+        webapp_url=os.getenv('WEBAPP_URL', 'http://127.0.0.1:8000'),
     )
+
