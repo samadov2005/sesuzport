@@ -26,13 +26,16 @@ async def global_cancel_or_back(message: Message, state: FSMContext) -> None:
     )
 
 
+from aiogram.types import Message, ErrorEvent
+
+
 @router.errors()
-async def error_handler(update, exception):
-    logger.exception(f"Exception handling update: {update}\n{exception}")
-    if update.message:
+async def error_handler(event: ErrorEvent):
+    logger.exception(f"Exception handling update: {event.update}\n{event.exception}")
+    if event.update and event.update.message:
         try:
-            await update.message.answer("⚠️ Texnik xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.")
-        except TelegramAPIError:
+            await event.update.message.answer("⚠️ Texnik xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.")
+        except Exception:
             pass
 
 
