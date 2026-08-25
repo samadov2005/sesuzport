@@ -36,6 +36,21 @@ def camera_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
         )
 
 
+def camera_inline_keyboard(lang: str = 'uz') -> InlineKeyboardMarkup | None:
+    """Inline button attached directly to message with WebApp URL."""
+    config = get_bot_config()
+    camera_url = f"{config.webapp_url.rstrip('/')}/camera/"
+    camera_btn_text = "📸 Kamerani ochish (Jonli)" if lang == 'uz' else "📸 Открыть камеру (Онлайн)"
+
+    if camera_url.startswith('https://'):
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text=camera_btn_text, web_app=WebAppInfo(url=camera_url))]
+            ]
+        )
+    return None
+
+
 def cancel_keyboard(lang: str = 'uz') -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[

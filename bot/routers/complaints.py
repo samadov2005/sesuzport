@@ -10,8 +10,9 @@ from aiogram.fsm.context import FSMContext
 from bot.config import get_bot_config
 from bot.keyboards.consumer import consumer_keyboard
 from bot.keyboards.complaint import (
-    cancel_keyboard,
     camera_keyboard,
+    camera_inline_keyboard,
+    cancel_keyboard,
     complaint_reasons_keyboard,
     location_keyboard,
     complaint_detail_keyboard,
@@ -115,8 +116,15 @@ async def process_description_text(message: Message, state: FSMContext) -> None:
     await state.set_state(ComplaintStates.waiting_for_photo)
     config = get_bot_config()
     if config.webapp_url.startswith('https://'):
+        inline_kb = camera_inline_keyboard(lang)
         await message.answer(
             get_text('complaint_photo_prompt', lang),
+            reply_markup=inline_kb,
+            parse_mode="HTML",
+        )
+        # Also provide bottom keyboard with cancel and camera
+        await message.answer(
+            "👇 " + ("Quyidagi tugma orqali ham ochishingiz mumkin:" if lang == 'uz' else "Также можете открыть через кнопку ниже:"),
             reply_markup=camera_keyboard(lang),
             parse_mode="HTML",
         )
