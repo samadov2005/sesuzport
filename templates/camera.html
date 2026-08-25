@@ -388,28 +388,35 @@
         let torchTrack = null;
         let isTorchOn = false;
 
-        // Initialize Camera
+        // Initialize Camera with robust fallbacks
         async function startCamera() {
-            try {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error("Ushbu brauzerda video stream qo'llab-quvvatlanmaydi.");
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                // Device does not support getUserMedia stream -> use direct hardware capture
+                fallbackBtn.style.display = 'block';
+                showError("To'g'ridan-to'g'ri kamera orqali rasmga olish uchun pastdagi tugmani bosing.");
+                return;
+            }
+
+            const constraintList = [
+                { audio: false, video: { facingMode: { ideal: "environment" } } },
+                { audio: false, video: { facingMode: "environment" } },
+                { audio: false, video: true }
+            ];
+
+            let started = false;
+            for (const constraints of constraintList) {
+                try {
+                    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = mediaStream;
+                    await video.play();
+                    started = true;
+                    break;
+                } catch (e) {
+                    console.warn("Constraint attempt failed:", constraints, e);
                 }
+            }
 
-                // Constraints for back camera
-                const constraints = {
-                    audio: false,
-                    video: {
-                        facingMode: { ideal: "environment" },
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
-                };
-
-                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = mediaStream;
-                await video.play();
-
-                // Check for torch capability
+            if (started) {
                 const track = mediaStream.getVideoTracks()[0];
                 if (track) {
                     torchTrack = track;
@@ -418,11 +425,9 @@
                         torchBtn.style.display = 'flex';
                     }
                 }
-
                 errorOverlay.style.display = 'none';
-            } catch (err) {
-                console.warn("Direct stream error:", err);
-                showError("Kameraga ulanishda ruxsat berilmadi yoki xatolik yuz berdi.");
+            } else {
+                showError("Kamera oqimiga ulanib bo'lmadi. Kamerani to'g'ridan-to'g'ri ochish uchun pastdagi tugmani bosing:");
             }
         }
 
