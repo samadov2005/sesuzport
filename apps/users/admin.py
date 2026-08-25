@@ -7,17 +7,48 @@ from .models import TelegramUser, UserRole
 class TelegramUserAdmin(admin.ModelAdmin):
     list_display = [
         'telegram_id', 'display_name', 'username_link',
-        'phone_number', 'phone_number2', 'language_badge',
-        'role_badge', 'registration_badge', 'is_active', 'created_at',
+        'phone_number', 'role_badge', 'registration_badge',
+        'is_active', 'created_at',
     ]
-    list_filter = ['language', 'role', 'is_active', 'is_registered', 'created_at']
+    list_filter = ['role', 'is_active', 'is_registered', 'language', 'created_at']
     search_fields = [
         'telegram_id', 'username', 'first_name', 'last_name',
         'full_name_input', 'phone_number', 'phone_number2',
     ]
     readonly_fields = ['telegram_id', 'created_at', 'last_activity']
+    actions = ['make_admin', 'make_moderator', 'make_entrepreneur', 'make_consumer', 'activate_users', 'deactivate_users']
     ordering = ['-created_at']
     list_per_page = 30
+
+    @admin.action(description="🛡 Tanlanganlarni «ADMIN» qilish")
+    def make_admin(self, request, queryset):
+        count = queryset.update(role=UserRole.ADMIN)
+        self.message_user(request, f"{count} ta foydalanuvchiga ADMIN huquqi berildi.")
+
+    @admin.action(description="👮 Tanlanganlarni «MODERATOR» qilish")
+    def make_moderator(self, request, queryset):
+        count = queryset.update(role=UserRole.MODERATOR)
+        self.message_user(request, f"{count} ta foydalanuvchiga MODERATOR huquqi berildi.")
+
+    @admin.action(description="💼 Tanlanganlarni «TADBIRKOR» qilish")
+    def make_entrepreneur(self, request, queryset):
+        count = queryset.update(role=UserRole.ENTREPRENEUR)
+        self.message_user(request, f"{count} ta foydalanuvchiga TADBIRKOR maqomi berildi.")
+
+    @admin.action(description="👤 Tanlanganlarni «ISTE'MOLCHI» qilish")
+    def make_consumer(self, request, queryset):
+        count = queryset.update(role=UserRole.CONSUMER)
+        self.message_user(request, f"{count} ta foydalanuvchiga ISTE'MOLCHI maqomi berildi.")
+
+    @admin.action(description="✅ Tanlanganlarni faollashtirish (Activate)")
+    def activate_users(self, request, queryset):
+        count = queryset.update(is_active=True)
+        self.message_user(request, f"{count} ta foydalanuvchi faollashtirildi.")
+
+    @admin.action(description="🚫 Tanlanganlarni bloklash (Deactivate)")
+    def deactivate_users(self, request, queryset):
+        count = queryset.update(is_active=False)
+        self.message_user(request, f"{count} ta foydalanuvchi bloklandi.")
 
     fieldsets = (
         ("🆔 Telegram ma'lumotlari", {
