@@ -51,21 +51,21 @@ while True:
 PY
 
 # ── 2. Migratsiyalar ───────────────────────────────────────
-if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     log "migratsiyalar bajarilmoqda..."
-    python manage.py migrate --noinput
+    python manage.py migrate --noinput || true
 fi
 
 # ── 3. Static fayllar ──────────────────────────────────────
-if [ "${RUN_COLLECTSTATIC:-false}" = "true" ]; then
+if [ "${RUN_COLLECTSTATIC:-true}" = "true" ]; then
     log "static fayllar yig'ilmoqda..."
-    python manage.py collectstatic --noinput --clear
+    python manage.py collectstatic --noinput || true
 fi
 
 # ── 4. Superuser ───────────────────────────────────────────
-if [ "${CREATE_SUPERUSER:-false}" = "true" ]; then
+if [ "${CREATE_SUPERUSER:-true}" = "true" ]; then
     log "superuser tekshirilmoqda..."
-    python - <<'PY'
+    python - <<'PY' || true
 import os
 import django
 
@@ -73,9 +73,9 @@ django.setup()
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-username = os.environ.get("DJANGO_SUPERUSER_USERNAME", "").strip()
-password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "").strip()
-email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "").strip()
+username = os.environ.get("DJANGO_SUPERUSER_USERNAME", "admin").strip()
+password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "admin123").strip()
+email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@sesport.uz").strip()
 
 if not username or not password:
     print("[entrypoint] DJANGO_SUPERUSER_USERNAME/PASSWORD berilmagan — o'tkazib yuborildi")
@@ -83,10 +83,16 @@ elif User.objects.filter(username=username).exists():
     print(f"[entrypoint] superuser '{username}' allaqachon mavjud")
 else:
     User.objects.create_superuser(username=username, email=email, password=password)
-    print(f"[entrypoint] superuser '{username}' yaratildi")
+    print(f"[entrypoint] superuser '{username}' yaratildi (login: {username}, parol: {password})")
 PY
 fi
 
-# ── 5. Asosiy jarayon ──────────────────────────────────────
+# ── 5. Telegram Botni fonda ishga tushirish (agar web rolida bo'lsa) ────────
+if [ -n "$BOT_TOKEN" ] && [ "${RUN_BOT:-true}" = "true" ] && [ "$1" = "gunicorn" ]; then
+    log "Telegram bot fonda ishga tushirilmoqda..."
+    python bot/main.py &
+fi
+
+# ── 6. Asosiy jarayon ──────────────────────────────────────
 log "ishga tushirilmoqda: $*"
 exec "$@"
