@@ -16,11 +16,12 @@ def get_bot_config() -> BotConfig:
     token = os.getenv('BOT_TOKEN')
     if not token:
         raise ValueError('BOT_TOKEN environment variable is required')
+    webapp_url = (os.getenv('WEBAPP_URL') or os.getenv('RENDER_EXTERNAL_URL') or 'http://127.0.0.1:8000').strip().rstrip('/')
     return BotConfig(
         token=token,
         webhook_url=os.getenv('WEBHOOK_URL'),
         webhook_secret=os.getenv('WEBHOOK_SECRET'),
         redis_url=os.getenv('REDIS_URL', 'redis://localhost:6379/1'),
-        webapp_url=os.getenv('WEBAPP_URL', 'http://127.0.0.1:8000'),
+        webapp_url=webapp_url,
     )
 
