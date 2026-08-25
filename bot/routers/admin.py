@@ -3,8 +3,9 @@ import asyncio
 
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
+from bot.config import get_bot_config
 
 from bot.keyboards.admin import (
     admin_main_keyboard,
@@ -598,12 +599,23 @@ async def admin_web_link(message: Message) -> None:
     if not await _check_admin(message):
         return
 
+    config = get_bot_config()
+    admin_url = f"{config.webapp_url.rstrip('/')}/admin/"
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🌐 Admin panelni ochish", url=admin_url)]
+        ]
+    )
+
     await message.answer(
-        "🌐 <b>Django Web Admin Panel</b>\n\n"
-        "To'liq boshqaruv, grafiklar va hisobotlar uchun brauzer orqali kiring:\n"
-        "🔗 <b>URL:</b> <a href=\"http://127.0.0.1:8000/admin/\">http://127.0.0.1:8000/admin/</a>\n\n"
+        "🌐 <b>SESPORT — Django Web Admin Panel</b>\n\n"
+        "To'liq boshqaruv, grafiklar, shikoyatlar va hisobotlar uchun brauzer orqali kiring:\n"
+        f"🔗 <b>Rasmiy URL:</b> <a href=\"{admin_url}\">{admin_url}</a>\n\n"
         "👤 <b>Login:</b> <code>admin</code>\n"
-        "🔑 <b>Parol:</b> <code>1</code>",
+        "🔑 <b>Parol:</b> <code>admin123</code> (yoki o'rnatilgan parolingiz)\n\n"
+        "<i>Quyidagi tugma orqali to'g'ridan-to'g'ri kiring:</i>",
+        reply_markup=kb,
         parse_mode="HTML"
     )
 
