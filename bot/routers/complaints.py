@@ -206,7 +206,35 @@ async def process_camera_photo_webapp(message: Message, state: FSMContext) -> No
             parse_mode="HTML"
         )
         photo_id = sent_msg.photo[-1].file_id
-        await state.update_data(photo_file_id=photo_id, local_photo_path=file_path)
+
+        # Backup photo to Telegram Archive Channel (if configured)
+        config = get_bot_config()
+        if config.archive_channel_id:
+            try:
+                user_info = f"@{message.from_user.username}" if message.from_user.username else f"ID: {message.from_user.id}"
+                channel_caption = (
+                    f"📸 <b>#shikoyat_rasm | SESPORT Media Arxiv</b>\n\n"
+                    f"👤 <b>Yuboruvchi:</b> {message.from_user.full_name} ({user_info})\n"
+                    f"🆔 <b>File ID:</b> <code>{photo_id}</code>"
+                )
+                await message.bot.send_photo(
+                    chat_id=config.archive_channel_id,
+                    photo=photo_id,
+                    caption=channel_caption,
+                    parse_mode="HTML"
+                )
+            except Exception as channel_err:
+                logger.warning(f"Failed to forward photo to archive channel {config.archive_channel_id}: {channel_err}")
+
+        # Clean up local disk file immediately -> 0 MB server storage
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logger.info(f"Cleaned up local temporary camera photo: {file_path}")
+        except Exception as clean_err:
+            logger.warning(f"Could not delete temp camera file {file_path}: {clean_err}")
+
+        await state.update_data(photo_file_id=photo_id)
         await state.set_state(ComplaintStates.waiting_for_location)
         await message.answer(
             get_text('complaint_location_prompt', lang),

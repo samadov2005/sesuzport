@@ -11,7 +11,8 @@ class BotConfig:
     webhook_secret: str | None
     redis_url: str
     webapp_url: str
-    
+    archive_channel_id: str | None
+
 def get_bot_config() -> BotConfig:
     token = os.getenv('BOT_TOKEN')
     if not token:
@@ -23,5 +24,6 @@ def get_bot_config() -> BotConfig:
         webhook_secret=os.getenv('WEBHOOK_SECRET'),
         redis_url=os.getenv('REDIS_URL', 'redis://localhost:6379/1'),
         webapp_url=webapp_url,
+        archive_channel_id=os.getenv('ARCHIVE_CHANNEL_ID') or os.getenv('MEDIA_CHANNEL_ID'),
     )
 
