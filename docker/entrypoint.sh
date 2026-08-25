@@ -56,6 +56,12 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     python manage.py migrate --noinput || true
 fi
 
+# ── 2.1 Boshlang'ich ma'lumotlar (Huquqlar, Do'konlar) ──────
+if [ "${RUN_SEED:-true}" = "true" ]; then
+    log "boshlang'ich huquqlar va do'konlar (seed) kiritilmoqda..."
+    python manage.py seed --mode real || true
+fi
+
 # ── 3. Static fayllar ──────────────────────────────────────
 if [ "${RUN_COLLECTSTATIC:-true}" = "true" ]; then
     log "static fayllar yig'ilmoqda..."
