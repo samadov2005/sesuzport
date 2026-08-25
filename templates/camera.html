@@ -473,6 +473,12 @@
                 tg.HapticFeedback.impactOccurred('medium');
             }
 
+            // If live stream is not ready, open hardware camera directly
+            if (!mediaStream || !video.videoWidth) {
+                fallbackCameraInput.click();
+                return;
+            }
+
             // Flash effect
             flashOverlay.classList.add('active');
             setTimeout(() => flashOverlay.classList.remove('active'), 120);

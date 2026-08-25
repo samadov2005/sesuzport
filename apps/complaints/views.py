@@ -23,6 +23,8 @@ def camera_view(request: HttpRequest) -> HttpResponse:
     response = render(request, 'camera.html', {
         'debug': settings.DEBUG,
     })
+    response['X-Frame-Options'] = 'ALLOWALL'
+    response['Content-Security-Policy'] = "frame-ancestors *;"
     response['Bypass-Tunnel-Reminder'] = '1'
     return response
 
