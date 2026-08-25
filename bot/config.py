@@ -17,7 +17,7 @@ def get_bot_config() -> BotConfig:
     token = os.getenv('BOT_TOKEN')
     if not token:
         raise ValueError('BOT_TOKEN environment variable is required')
-    webapp_url = (os.getenv('WEBAPP_URL') or os.getenv('RENDER_EXTERNAL_URL') or 'http://127.0.0.1:8000').strip().rstrip('/')
+    webapp_url = (os.getenv('WEBAPP_URL') or os.getenv('RENDER_EXTERNAL_URL') or 'https://sesuzport.onrender.com').strip().rstrip('/')
     return BotConfig(
         token=token,
         webhook_url=os.getenv('WEBHOOK_URL'),
