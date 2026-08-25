@@ -13,18 +13,16 @@ def _env_list(name: str) -> list[str]:
 DEBUG = False
 
 # ----------------------------------------------------------------
-# ALLOWED_HOSTS
-# localhost/127.0.0.1 doim qo'shiladi — Docker HEALTHCHECK shu Host
-# bilan keladi (curl -H "Host: localhost").
-# NPM `Host` sarlavhasini o'zgartirmasdan uzatadi, shuning uchun bu
-# yerda haqiqiy domen bo'lishi shart.
+# ALLOWED_HOSTS & CSRF
 # ----------------------------------------------------------------
-ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS') + ['localhost', '127.0.0.1']
+_allowed = _env_list('ALLOWED_HOSTS')
+if not _allowed or '*' in _allowed:
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = list(set(_allowed + ['localhost', '127.0.0.1', '.onrender.com']))
 
-# Admin panelga POST qilish uchun (Django 4+ talabi).
-# NPM SSL termination qilgani uchun sxema DOIM https bo'ladi:
-#   CSRF_TRUSTED_ORIGINS=https://sesport.uz,https://www.sesport.uz
-CSRF_TRUSTED_ORIGINS = _env_list('CSRF_TRUSTED_ORIGINS')
+_csrf = _env_list('CSRF_TRUSTED_ORIGINS')
+CSRF_TRUSTED_ORIGINS = list(set(_csrf + ['https://*.onrender.com']))
 
 # ----------------------------------------------------------------
 # Reverse proxy — Nginx Proxy Manager (NPM) ortida ishlash
@@ -126,13 +124,16 @@ STORAGES = {
 # xavfsiz sarlavhalar bilan. Katta yuklama uchun esa NPM'da
 # alohida "Custom location" sozlagan ma'qul — pastdagi README ga qarang.
 # ----------------------------------------------------------------
-SERVE_MEDIA_FILES = _env_bool('SERVE_MEDIA_FILES', False)
+SERVE_MEDIA_FILES = _env_bool('SERVE_MEDIA_FILES', True)
 
 # ----------------------------------------------------------------
 # Bot FSM storage
 # ----------------------------------------------------------------
-BOT_FSM_STORAGE = 'redis'
-BOT_REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/1')
+if os.environ.get('REDIS_URL', '').strip():
+    BOT_FSM_STORAGE = 'redis'
+    BOT_REDIS_URL = os.environ.get('REDIS_URL')
+else:
+    BOT_FSM_STORAGE = 'memory'
 
 # ----------------------------------------------------------------
 # Logging

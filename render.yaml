@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: sesportuz
+    runtime: python
+    region: frankfurt
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "./start.sh"
+    healthCheckPath: "/healthz/"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sesportuz-db
+          property: connectionString
+      - key: BOT_TOKEN
+        sync: false
+      - key: WEBAPP_URL
+        sync: false
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: ENABLE_HTTPS
+        value: "True"
+      - key: SERVE_MEDIA_FILES
+        value: "True"
+
+databases:
+  - name: sesportuz-db
+    plan: free
+    region: frankfurt
+    databaseName: sesport_db
+    user: sesport_user
