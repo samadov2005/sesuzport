@@ -68,12 +68,12 @@ RUN mkdir -p /app/logs /app/media /app/staticfiles \
 
 USER app
 
-EXPOSE 8000
+EXPOSE 8000 10000
 
 # /healthz/ SECURE_REDIRECT_EXEMPT ro'yxatida — ENABLE_HTTPS=true bo'lsa ham
 # 301 qaytarmaydi. 'localhost' esa production.py da ALLOWED_HOSTS ga doim qo'shiladi.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
-    CMD curl -fsS -H "Host: localhost" http://127.0.0.1:8000/healthz/ >/dev/null || exit 1
+    CMD curl -fsS -H "Host: localhost" http://127.0.0.1:${PORT:-8000}/healthz/ >/dev/null || exit 1
 
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 

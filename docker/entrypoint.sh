@@ -94,5 +94,21 @@ if [ -n "$BOT_TOKEN" ] && [ "${RUN_BOT:-true}" = "true" ] && [ "$1" = "gunicorn"
 fi
 
 # ── 6. Asosiy jarayon ──────────────────────────────────────
-log "ishga tushirilmoqda: $*"
-exec "$@"
+PORT="${PORT:-8000}"
+log "Servis porti: $PORT, ishga tushirilmoqda: $*"
+
+if [ "$1" = "gunicorn" ]; then
+    exec gunicorn config.wsgi:application \
+        --bind "0.0.0.0:${PORT}" \
+        --workers "${WEB_CONCURRENCY:-2}" \
+        --timeout 120 \
+        --graceful-timeout 30 \
+        --keep-alive 5 \
+        --max-requests 1000 \
+        --max-requests-jitter 100 \
+        --forwarded-allow-ips "*" \
+        --access-logfile - \
+        --error-logfile -
+else
+    exec "$@"
+fi
