@@ -23,4 +23,9 @@ urlpatterns = [
     # Rights & Support
     path('rights/', views.get_rights_list, name='rights_list'),
     path('support/', views.get_support_info, name='support_info'),
+
+    # Admin & Moderation
+    path('admin/stats/', views.get_admin_stats, name='admin_stats'),
+    path('admin/complaints/', views.get_admin_complaints, name='admin_complaints'),
+    path('admin/complaints/<int:complaint_id>/moderate/', views.moderate_complaint, name='admin_moderate_complaint'),
 ]

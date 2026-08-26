@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'constants/app_colors.dart';
+import 'constants/theme_notifier.dart';
 import 'screens/splash_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Set dark system navigation bar and status bar
+  await ThemeNotifier.instance.init();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppColors.background,
-      systemNavigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
     ),
   );
 
@@ -24,33 +23,67 @@ class SesportApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SESPORT',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.primary,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.primaryLight,
-          secondary: AppColors.accent,
-          surface: AppColors.surface,
-          background: AppColors.background,
-        ),
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.surface,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+    return AnimatedBuilder(
+      animation: ThemeNotifier.instance,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'SESPORT',
+          debugShowCheckedModeBanner: false,
+          themeMode: ThemeNotifier.instance.themeMode,
+
+          // ☀️ CLEAN LIGHT THEME
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: AppColors.lightBackground,
+            primaryColor: AppColors.primary,
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              secondary: AppColors.accent,
+              surface: AppColors.lightSurface,
+            ),
+            fontFamily: 'Roboto',
+            appBarTheme: const AppBarTheme(
+              backgroundColor: AppColors.lightSurface,
+              elevation: 0,
+              centerTitle: true,
+              titleTextStyle: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.lightTextPrimary,
+              ),
+              iconTheme: IconThemeData(color: AppColors.lightTextPrimary),
+            ),
           ),
-          iconTheme: IconThemeData(color: AppColors.textPrimary),
-        ),
-      ),
-      home: const SplashScreen(),
+
+          // 🌙 MODERN DARK THEME
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: AppColors.darkBackground,
+            primaryColor: AppColors.primaryLight,
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primaryLight,
+              secondary: AppColors.accent,
+              surface: AppColors.darkSurface,
+            ),
+            fontFamily: 'Roboto',
+            appBarTheme: const AppBarTheme(
+              backgroundColor: AppColors.darkSurface,
+              elevation: 0,
+              centerTitle: true,
+              titleTextStyle: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkTextPrimary,
+              ),
+              iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
+            ),
+          ),
+
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }

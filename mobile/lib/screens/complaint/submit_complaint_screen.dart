@@ -224,7 +224,7 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black75,
+                        color: Colors.black.withOpacity(0.75),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(

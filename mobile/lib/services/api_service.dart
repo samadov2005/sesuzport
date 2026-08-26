@@ -63,24 +63,27 @@ class ApiService {
     }
   }
 
-  // ── Profile ────────────────────────────────────────────────
+  // ── User Profile ───────────────────────────────────────────
   static Future<UserModel?> getProfile() async {
-    final token = await getToken();
-    if (token == null) return null;
-
     try {
+      final token = await getToken();
+      if (token == null) return null;
+
       final response = await http.get(
         Uri.parse(ApiConstants.profile),
         headers: _headers(token),
       );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         if (data['success'] == true) {
           return UserModel.fromJson(data['user']);
         }
       }
-    } catch (_) {}
-    return null;
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   // ── Complaints ─────────────────────────────────────────────
@@ -90,8 +93,8 @@ class ApiService {
     required double latitude,
     required double longitude,
   }) async {
-    final token = await getToken();
     try {
+      final token = await getToken();
       final response = await http.post(
         Uri.parse(ApiConstants.createComplaint),
         headers: _headers(token),
@@ -104,36 +107,32 @@ class ApiService {
       );
 
       final data = jsonDecode(utf8.decode(response.bodyBytes));
-      if (response.statusCode == 200 && data['success'] == true) {
-        return {
-          'success': true,
-          'ticket_id': data['ticket_id'],
-          'message': data['message'],
-        };
-      } else {
-        return {'success': false, 'error': data['error'] ?? 'Xatolik yuz berdi.'};
-      }
+      return data;
     } catch (e) {
-      return {'success': false, 'error': 'Murojaat yuborishda xatolik: $e'};
+      return {'success': false, 'error': 'Yuborishda xatolik: $e'};
     }
   }
 
   static Future<List<ComplaintModel>> getMyComplaints() async {
-    final token = await getToken();
     try {
+      final token = await getToken();
       final response = await http.get(
         Uri.parse(ApiConstants.myComplaints),
         headers: _headers(token),
       );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data['success'] == true) {
-          final list = data['complaints'] as List;
-          return list.map((e) => ComplaintModel.fromJson(e)).toList();
+        if (data['success'] == true && data['complaints'] != null) {
+          return (data['complaints'] as List)
+              .map((c) => ComplaintModel.fromJson(c))
+              .toList();
         }
       }
-    } catch (_) {}
-    return [];
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Stores ─────────────────────────────────────────────────
@@ -141,44 +140,53 @@ class ApiService {
     String? status,
     String? query,
     double? lat,
-    double? lon,
+    double? lng,
   }) async {
     try {
-      final params = <String, String>{};
-      if (status != null) params['status'] = status;
-      if (query != null && query.isNotEmpty) params['q'] = query;
-      if (lat != null && lon != null) {
-        params['lat'] = lat.toString();
-        params['lon'] = lon.toString();
+      final queryParams = <String, String>{};
+      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      if (query != null && query.isNotEmpty) queryParams['q'] = query;
+      if (lat != null && lng != null) {
+        queryParams['lat'] = lat.toString();
+        queryParams['lng'] = lng.toString();
       }
 
-      final uri = Uri.parse(ApiConstants.stores).replace(queryParameters: params);
+      final uri = Uri.parse(ApiConstants.stores).replace(queryParameters: queryParams);
       final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data['success'] == true) {
-          final list = data['stores'] as List;
-          return list.map((e) => StoreModel.fromJson(e)).toList();
+        if (data['success'] == true && data['stores'] != null) {
+          return (data['stores'] as List)
+              .map((s) => StoreModel.fromJson(s))
+              .toList();
         }
       }
-    } catch (_) {}
-    return [];
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Cashback ───────────────────────────────────────────────
   static Future<Map<String, dynamic>> getCashback() async {
-    final token = await getToken();
     try {
+      final token = await getToken();
       final response = await http.get(
         Uri.parse(ApiConstants.cashback),
         headers: _headers(token),
       );
+
       if (response.statusCode == 200) {
-        return jsonDecode(utf8.decode(response.bodyBytes));
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['success'] == true) {
+          return data;
+        }
       }
-    } catch (_) {}
-    return {'success': false, 'balance': 0.0, 'transactions': []};
+      return {'balance': 0.0, 'total_earned': 0.0, 'total_spent': 0.0, 'transactions': []};
+    } catch (_) {
+      return {'balance': 0.0, 'total_earned': 0.0, 'total_spent': 0.0, 'transactions': []};
+    }
   }
 
   // ── Rights & Support ───────────────────────────────────────
@@ -187,12 +195,14 @@ class ApiService {
       final response = await http.get(Uri.parse(ApiConstants.rights));
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data['success'] == true) {
+        if (data['success'] == true && data['rights'] != null) {
           return List<Map<String, dynamic>>.from(data['rights']);
         }
       }
-    } catch (_) {}
-    return [];
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   static Future<Map<String, dynamic>> getSupportInfo() async {
@@ -200,9 +210,80 @@ class ApiService {
       final response = await http.get(Uri.parse(ApiConstants.support));
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        return data['support'] ?? {};
+        if (data['success'] == true && data['support'] != null) {
+          return Map<String, dynamic>.from(data['support']);
+        }
       }
-    } catch (_) {}
-    return {};
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  // ── Admin & Moderation ─────────────────────────────────────
+  static Future<Map<String, dynamic>> getAdminStats() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse(ApiConstants.adminStats),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['success'] == true) {
+          return Map<String, dynamic>.from(data['stats']);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static Future<List<ComplaintModel>> getAdminComplaints({String? status}) async {
+    try {
+      final token = await getToken();
+      final queryParams = <String, String>{};
+      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+
+      final uri = Uri.parse(ApiConstants.adminComplaints).replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _headers(token));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['success'] == true && data['complaints'] != null) {
+          return (data['complaints'] as List)
+              .map((c) => ComplaintModel.fromJson(c))
+              .toList();
+        }
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> moderateComplaint({
+    required int complaintId,
+    required String status,
+    String? comment,
+    int? points,
+  }) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse(ApiConstants.adminModerate(complaintId)),
+        headers: _headers(token),
+        body: jsonEncode({
+          'status': status,
+          'moderation_comment': comment ?? '',
+          'points': points ?? 0,
+        }),
+      );
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data;
+    } catch (e) {
+      return {'success': false, 'error': 'Moderatsiyada xatolik: $e'};
+    }
   }
 }
