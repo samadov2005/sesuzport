@@ -46,10 +46,10 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Fallback default coordinates (Tashkent center)
-        _latitude = 41.311081;
-        _longitude = 69.240562;
-        setState(() => _isGettingLocation = false);
+        setState(() {
+          _errorMessage = "GPS o'chiq. Iltimos, lokatsiyani yoqing.";
+          _isGettingLocation = false;
+        });
         return;
       }
 
@@ -57,21 +57,35 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _latitude = 41.311081;
-          _longitude = 69.240562;
-          setState(() => _isGettingLocation = false);
+          setState(() {
+            _errorMessage = "Lokatsiya ruxsati berilmadi.";
+            _isGettingLocation = false;
+          });
           return;
         }
       }
 
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _errorMessage = "Lokatsiya ruxsati butunlay rad etilgan. Sozlamalardan yoqing.";
+          _isGettingLocation = false;
+        });
+        return;
+      }
+
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
       );
       _latitude = position.latitude;
       _longitude = position.longitude;
-    } catch (_) {
-      _latitude = 41.311081;
-      _longitude = 69.240562;
+      setState(() => _errorMessage = null);
+    } catch (e) {
+      debugPrint("Location error: $e");
+      // Fallback default coordinates (Tashkent center) only if absolutely necessary
+      // But better to warn user
+      _latitude ??= 41.311081;
+      _longitude ??= 69.240562;
     } finally {
       if (mounted) setState(() => _isGettingLocation = false);
     }

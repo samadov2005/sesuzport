@@ -28,23 +28,38 @@ class _LiveCameraScreenState extends State<LiveCameraScreen> {
   Future<void> _initCamera() async {
     try {
       _cameras = await availableCameras();
-      if (_cameras != null && _cameras!.isNotEmpty) {
-        // Default to back camera
-        _selectedCameraIndex = _cameras!.indexWhere(
-          (c) => c.lensDirection == CameraLensDirection.back,
-        );
-        if (_selectedCameraIndex == -1) _selectedCameraIndex = 0;
-
-        _controller = CameraController(
-          _cameras![_selectedCameraIndex],
-          ResolutionPreset.high,
-          enableAudio: false,
-        );
-        await _controller!.initialize();
-        if (mounted) setState(() {});
+      if (_cameras == null || _cameras!.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Kamera topilmadi')),
+          );
+        }
+        return;
       }
+
+      // Default to back camera
+      _selectedCameraIndex = _cameras!.indexWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+      );
+      if (_selectedCameraIndex == -1) _selectedCameraIndex = 0;
+
+      _controller = CameraController(
+        _cameras![_selectedCameraIndex],
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
+      await _controller!.initialize();
+      if (mounted) setState(() {});
     } catch (e) {
       debugPrint('Camera init error: $e');
+      if (mounted) {
+        setState(() {}); // To stop loading spinner
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kamerani ishga tushirishda xatolik: $e')),
+        );
+      }
     }
   }
 
@@ -174,7 +189,7 @@ class _LiveCameraScreenState extends State<LiveCameraScreen> {
 
           // Top Controls (Flash, Switch, Close)
           Positioned(
-            top: 40,
+            top: MediaQuery.of(context).padding.top + 10,
             left: 16,
             right: 16,
             child: Row(
