@@ -21,7 +21,7 @@
     <application
         android:label="SESPORT"
         android:name="${applicationName}"
-        android:icon="@drawable/launch_background"
+        android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
 
         <activity
