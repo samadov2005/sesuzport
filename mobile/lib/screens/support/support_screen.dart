@@ -45,19 +45,21 @@ class _SupportScreenState extends State<SupportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     final phone = _support['phone'] ?? '+998712000000';
     final admin = _support['telegram_admin'] ?? 'sesport_admin';
     final dev = _support['developer'] ?? 'samadov2005';
     final faq = (_support['faq'] as List?) ?? [];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Yordam va Aloqa Markazi',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
         ),
       ),
       body: SingleChildScrollView(
@@ -69,29 +71,33 @@ class _SupportScreenState extends State<SupportScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: c.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.surfaceLight),
+                border: Border.all(color: c.surfaceLight),
+                boxShadow: c.cardShadow,
               ),
               child: Column(
                 children: [
                   _buildContactAction(
+                    c: c,
                     icon: Icons.phone_in_talk_rounded,
                     color: AppColors.safeGreen,
                     title: 'Ishonch telefoni (1080)',
                     subtitle: phone,
                     onTap: () => _makeCall(phone),
                   ),
-                  const Divider(color: AppColors.surfaceLight, height: 24),
+                  Divider(color: c.surfaceLight, height: 24),
                   _buildContactAction(
+                    c: c,
                     icon: Icons.send_rounded,
                     color: AppColors.infoBlue,
                     title: 'Bosh Administrator',
                     subtitle: '@$admin',
                     onTap: () => _openTelegram(admin),
                   ),
-                  const Divider(color: AppColors.surfaceLight, height: 24),
+                  Divider(color: c.surfaceLight, height: 24),
                   _buildContactAction(
+                    c: c,
                     icon: Icons.code_rounded,
                     color: AppColors.purple,
                     title: 'Dasturchi va Texnik qo\'llab-quvvatlash',
@@ -104,9 +110,9 @@ class _SupportScreenState extends State<SupportScreen> {
             const SizedBox(height: 28),
 
             // FAQ Section
-            const Text(
+            Text(
               'Ko\'p beriladigan savollar (FAQ)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
             ),
             const SizedBox(height: 12),
 
@@ -118,26 +124,27 @@ class _SupportScreenState extends State<SupportScreen> {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: c.surface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.surfaceLight),
+                      border: Border.all(color: c.surfaceLight),
+                      boxShadow: c.cardShadow,
                     ),
                     child: Theme(
                       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
                         iconColor: AppColors.primaryLight,
-                        collapsedIconColor: AppColors.textMuted,
+                        collapsedIconColor: c.textMuted,
                         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         title: Text(
                           item['question'] ?? '',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.textPrimary),
                         ),
                         children: [
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                             child: Text(
                               item['answer'] ?? '',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                              style: TextStyle(fontSize: 12, color: c.textSecondary, height: 1.4),
                             ),
                           ),
                         ],
@@ -153,6 +160,7 @@ class _SupportScreenState extends State<SupportScreen> {
   }
 
   Widget _buildContactAction({
+    required AppThemeColors c,
     required IconData icon,
     required Color color,
     required String title,
@@ -177,13 +185,13 @@ class _SupportScreenState extends State<SupportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.textPrimary)),
                 const SizedBox(height: 2),
                 Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.primaryLight, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios, color: AppColors.textMuted, size: 14),
+          Icon(Icons.arrow_forward_ios, color: c.textMuted, size: 14),
         ],
       ),
     );

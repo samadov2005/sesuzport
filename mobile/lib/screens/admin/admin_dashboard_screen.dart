@@ -49,6 +49,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   void _openModerateDialog(ComplaintModel complaint) {
+    final c = context.colors;
     String newStatus = complaint.status == 'PENDING' ? 'UNDER_REVIEW' : 'RESOLVED';
     final commentController = TextEditingController(text: complaint.moderationComment);
     final pointsController = TextEditingController(text: '5000');
@@ -56,7 +57,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -77,10 +78,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 children: [
                   Text(
                     'Murojaatni tekshirish #${complaint.ticketId}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textMuted),
+                    icon: Icon(Icons.close, color: c.textMuted),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
@@ -88,51 +89,53 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               const SizedBox(height: 12),
               Text(
                 complaint.description,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, color: c.textSecondary),
               ),
               const SizedBox(height: 16),
 
-              const Text('Yangi holat:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Text('Yangi holat:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.textPrimary)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 children: [
-                  _buildStatusChoice(setModalState, newStatus, 'UNDER_REVIEW', '🔍 Ko\'rib chiqilmoqda', (val) => newStatus = val),
-                  _buildStatusChoice(setModalState, newStatus, 'RESOLVED', '🟢 Hal qilindi', (val) => newStatus = val),
-                  _buildStatusChoice(setModalState, newStatus, 'REJECTED', '🔴 Rad etildi', (val) => newStatus = val),
+                  _buildStatusChoice(setModalState, newStatus, 'UNDER_REVIEW', '🔍 Ko\'rib chiqilmoqda', (val) => newStatus = val, c),
+                  _buildStatusChoice(setModalState, newStatus, 'RESOLVED', '🟢 Hal qilindi', (val) => newStatus = val, c),
+                  _buildStatusChoice(setModalState, newStatus, 'REJECTED', '🔴 Rad etildi', (val) => newStatus = val, c),
                 ],
               ),
               const SizedBox(height: 16),
 
               if (newStatus == 'RESOLVED') ...[
-                const Text('Rag\'batlantirish balli (Keshbek):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                Text('Rag\'batlantirish balli (Keshbek):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.textPrimary)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: pointsController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: TextStyle(color: c.textPrimary),
                   decoration: InputDecoration(
                     hintText: '5000',
                     filled: true,
-                    fillColor: AppColors.background,
+                    fillColor: c.background,
                     suffixText: 'so\'m',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.surfaceLight)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.surfaceLight)),
                   ),
                 ),
                 const SizedBox(height: 16),
               ],
 
-              const Text('Inspektor izohi (Foydalanuvchiga ko\'rinadi):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Text('Inspektor izohi (Foydalanuvchiga ko\'rinadi):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.textPrimary)),
               const SizedBox(height: 6),
               TextField(
                 controller: commentController,
                 maxLines: 2,
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(color: c.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Masalan: Joyiga chiqib o\'rganildi, mahsulot savdodan olib tashlandi.',
                   filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: c.background,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.surfaceLight)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.surfaceLight)),
                 ),
               ),
               const SizedBox(height: 20),
@@ -181,6 +184,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     String target,
     String label,
     Function(String) onSelect,
+    AppThemeColors c,
   ) {
     final isSelected = current == target;
     return ChoiceChip(
@@ -192,9 +196,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         }
       },
       selectedColor: AppColors.primary,
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textSecondary,
+        color: isSelected ? Colors.white : c.textSecondary,
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
@@ -203,25 +207,27 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     final total = _stats['total_complaints'] ?? 0;
     final pending = _stats['pending'] ?? 0;
     final underReview = _stats['under_review'] ?? 0;
     final resolved = _stats['resolved'] ?? 0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'SESPORT — Admin & Moderator Boshqaruvi',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: c.textPrimary),
         ),
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
         color: AppColors.primaryLight,
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -231,13 +237,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               // Metric Cards Row
               Row(
                 children: [
-                  _buildMetricCard('Jami', '$total', Icons.assignment, AppColors.infoBlue),
+                  _buildMetricCard('Jami', '$total', Icons.assignment, AppColors.infoBlue, c),
                   const SizedBox(width: 8),
-                  _buildMetricCard('Kutilmoqda', '$pending', Icons.hourglass_top, AppColors.warnYellow),
+                  _buildMetricCard('Kutilmoqda', '$pending', Icons.hourglass_top, AppColors.warnYellow, c),
                   const SizedBox(width: 8),
-                  _buildMetricCard('Jarayonda', '$underReview', Icons.search, AppColors.purple),
+                  _buildMetricCard('Jarayonda', '$underReview', Icons.search, AppColors.purple, c),
                   const SizedBox(width: 8),
-                  _buildMetricCard('Hal qilindi', '$resolved', Icons.check_circle, AppColors.safeGreen),
+                  _buildMetricCard('Hal qilindi', '$resolved', Icons.check_circle, AppColors.safeGreen, c),
                 ],
               ),
               const SizedBox(height: 20),
@@ -247,13 +253,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildFilterChip(null, 'Barchasi ($total)'),
+                    _buildFilterChip(null, 'Barchasi ($total)', c),
                     const SizedBox(width: 8),
-                    _buildFilterChip('PENDING', '🟡 Kutilmoqda ($pending)'),
+                    _buildFilterChip('PENDING', '🟡 Kutilmoqda ($pending)', c),
                     const SizedBox(width: 8),
-                    _buildFilterChip('UNDER_REVIEW', '🔍 Jarayonda ($underReview)'),
+                    _buildFilterChip('UNDER_REVIEW', '🔍 Jarayonda ($underReview)', c),
                     const SizedBox(width: 8),
-                    _buildFilterChip('RESOLVED', '🟢 Hal qilingan ($resolved)'),
+                    _buildFilterChip('RESOLVED', '🟢 Hal qilingan ($resolved)', c),
                   ],
                 ),
               ),
@@ -267,11 +273,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: c.surface,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: c.surfaceLight),
                   ),
-                  child: const Center(
-                    child: Text('Ushbu holatda murojaatlar yo\'q.', style: TextStyle(color: AppColors.textMuted)),
+                  child: Center(
+                    child: Text('Ushbu holatda murojaatlar yo\'q.', style: TextStyle(color: c.textMuted)),
                   ),
                 )
               else
@@ -280,16 +287,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _complaints.length,
                   itemBuilder: (context, index) {
-                    final c = _complaints[index];
-                    final statusColor = _getStatusColor(c.status);
+                    final item = _complaints[index];
+                    final statusColor = _getStatusColor(item.status);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.surfaceLight),
+                        border: Border.all(color: c.surfaceLight),
+                        boxShadow: c.cardShadow,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,30 +305,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(c.ticketId, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                              Text(item.ticketId, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: c.textPrimary)),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.2),
+                                  color: statusColor.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: statusColor.withOpacity(0.5)),
+                                  border: Border.all(color: statusColor.withOpacity(0.4)),
                                 ),
-                                child: Text(c.statusDisplay, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
+                                child: Text(item.statusDisplay, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text(c.description, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.3)),
+                          Text(item.description, style: TextStyle(fontSize: 13, color: c.textSecondary, height: 1.3)),
                           const SizedBox(height: 10),
 
-                          if (c.moderationComment.isNotEmpty) ...[
+                          if (item.moderationComment.isNotEmpty) ...[
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppColors.background,
+                                color: c.background,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Text('Izoh: ${c.moderationComment}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                              child: Text('Izoh: ${item.moderationComment}', style: TextStyle(fontSize: 11, color: c.textMuted)),
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -328,9 +336,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(c.createdAt, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                              Text(item.createdAt, style: TextStyle(fontSize: 11, color: c.textMuted)),
                               ElevatedButton.icon(
-                                onPressed: () => _openModerateDialog(c),
+                                onPressed: () => _openModerateDialog(item),
                                 icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
                                 label: const Text('Ko\'rib chiqish', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
                                 style: ElevatedButton.styleFrom(
@@ -353,29 +361,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, IconData icon, Color color) {
+  Widget _buildMetricCard(String label, String value, IconData icon, Color color, AppThemeColors c) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: c.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.surfaceLight),
+          border: Border.all(color: c.surfaceLight),
+          boxShadow: c.cardShadow,
         ),
         child: Column(
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 4),
-            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary)),
             const SizedBox(height: 2),
-            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary)),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 9, color: c.textSecondary)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFilterChip(String? status, String label) {
+  Widget _buildFilterChip(String? status, String label, AppThemeColors c) {
     final isSelected = _selectedStatus == status;
     return ChoiceChip(
       label: Text(label),
@@ -387,9 +396,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         }
       },
       selectedColor: AppColors.primary,
-      backgroundColor: AppColors.surface,
+      backgroundColor: c.surface,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textSecondary,
+        color: isSelected ? Colors.white : c.textSecondary,
         fontSize: 11,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),

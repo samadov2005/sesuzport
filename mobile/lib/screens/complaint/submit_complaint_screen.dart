@@ -46,46 +46,26 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() {
-          _errorMessage = "GPS o'chiq. Iltimos, lokatsiyani yoqing.";
-          _isGettingLocation = false;
-        });
+        _latitude = 41.311081;
+        _longitude = 69.240562;
+        setState(() => _isGettingLocation = false);
         return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          setState(() {
-            _errorMessage = "Lokatsiya ruxsati berilmadi.";
-            _isGettingLocation = false;
-          });
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        setState(() {
-          _errorMessage = "Lokatsiya ruxsati butunlay rad etilgan. Sozlamalardan yoqing.";
-          _isGettingLocation = false;
-        });
-        return;
       }
 
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        timeLimit: const Duration(seconds: 5),
       );
       _latitude = position.latitude;
       _longitude = position.longitude;
-      setState(() => _errorMessage = null);
-    } catch (e) {
-      debugPrint("Location error: $e");
-      // Fallback default coordinates (Tashkent center) only if absolutely necessary
-      // But better to warn user
-      _latitude ??= 41.311081;
-      _longitude ??= 69.240562;
+    } catch (_) {
+      _latitude = 41.311081;
+      _longitude = 69.240562;
     } finally {
       if (mounted) setState(() => _isGettingLocation = false);
     }
@@ -125,11 +105,13 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
   }
 
   void _showSuccessDialog(String ticketId) {
+    final c = context.colors;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -143,9 +125,9 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
               child: const Icon(Icons.check_circle_rounded, color: AppColors.safeGreen, size: 50),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Murojaat qabul qilindi!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: c.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
@@ -153,10 +135,10 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primaryLight),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Murojaatingiz darhol SES inspektorlari nazoratiga olindi va tez orada ko\'rib chiqiladi.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: c.textSecondary),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -165,8 +147,8 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(ctx).pop();
-                  Navigator.of(context).pop(); // Back from submit
-                  Navigator.of(context).pop(); // Back from camera
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -189,14 +171,16 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Murojaatni tasdiqlash',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
         ),
       ),
       body: SingleChildScrollView(
@@ -224,7 +208,7 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
+                        color: Colors.black87,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -248,16 +232,17 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: c.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.surfaceLight),
+                border: Border.all(color: c.surfaceLight),
+                boxShadow: c.cardShadow,
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.location_on, color: AppColors.primaryLight, size: 22),
@@ -267,16 +252,16 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Hodisa joylashuvi (GPS)',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.textPrimary),
                         ),
                         const SizedBox(height: 2),
                         _isGettingLocation
-                            ? const Text('GPS aniqlanmoqda...', style: TextStyle(fontSize: 11, color: AppColors.textMuted))
+                            ? Text('GPS aniqlanmoqda...', style: TextStyle(fontSize: 11, color: c.textMuted))
                             : Text(
                                 '${_latitude?.toStringAsFixed(5)}, ${_longitude?.toStringAsFixed(5)}',
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                style: TextStyle(fontSize: 11, color: c.textSecondary),
                               ),
                       ],
                     ),
@@ -291,9 +276,9 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
             const SizedBox(height: 20),
 
             // Category Selector
-            const Text(
+            Text(
               'Muammo toifasi:',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: c.textPrimary),
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -308,9 +293,9 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
                     if (selected) setState(() => _selectedCategory = cat);
                   },
                   selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.surface,
+                  backgroundColor: c.surface,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    color: isSelected ? Colors.white : c.textSecondary,
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -320,21 +305,22 @@ class _SubmitComplaintScreenState extends State<SubmitComplaintScreen> {
             const SizedBox(height: 20),
 
             // Description Input
-            const Text(
+            Text(
               'Qo\'shimcha izoh (ixtiyoriy):',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: c.textPrimary),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _descController,
               maxLines: 3,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Masalan: Mahsulot muddati 15 kunga o\'tib ketgan, peshtaxtada turibdi...',
-                hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                hintStyle: TextStyle(color: c.textMuted, fontSize: 13),
                 filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                fillColor: c.surface,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: c.surfaceLight)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: c.surfaceLight)),
               ),
             ),
             const SizedBox(height: 16),

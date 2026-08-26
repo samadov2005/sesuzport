@@ -36,20 +36,22 @@ class _CashbackScreenState extends State<CashbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Keshbek va Rag\'batlantirish',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
         ),
       ),
       body: RefreshIndicator(
         onRefresh: _loadCashback,
         color: AppColors.primaryLight,
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(20),
@@ -115,25 +117,26 @@ class _CashbackScreenState extends State<CashbackScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: c.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceLight),
+                  border: Border.all(color: c.surfaceLight),
+                  boxShadow: c.cardShadow,
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.primary.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.info_outline, color: AppColors.primaryLight, size: 22),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Har bir tasdiqlangan va o\'rinli shikoyatingiz uchun rag\'batlantiruvchi keshbek ballari beriladi.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
+                        style: TextStyle(fontSize: 12, color: c.textSecondary, height: 1.3),
                       ),
                     ),
                   ],
@@ -142,9 +145,9 @@ class _CashbackScreenState extends State<CashbackScreen> {
               const SizedBox(height: 28),
 
               // Transactions Title
-              const Text(
+              Text(
                 'Ballar tarixi',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
               ),
               const SizedBox(height: 12),
 
@@ -153,15 +156,17 @@ class _CashbackScreenState extends State<CashbackScreen> {
                 const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
               else if (_transactions.isEmpty)
                 Container(
+                  width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: c.surface,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: c.surfaceLight),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'Hozircha tranzaksiyalar mavjud emas.',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      style: TextStyle(color: c.textMuted, fontSize: 13),
                     ),
                   ),
                 )
@@ -178,9 +183,10 @@ class _CashbackScreenState extends State<CashbackScreen> {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.surfaceLight),
+                        border: Border.all(color: c.surfaceLight),
+                        boxShadow: c.cardShadow,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -190,12 +196,12 @@ class _CashbackScreenState extends State<CashbackScreen> {
                             children: [
                               Text(
                                 tx['description'] ?? '',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.textPrimary),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 tx['created_at'] ?? '',
-                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                style: TextStyle(fontSize: 11, color: c.textMuted),
                               ),
                             ],
                           ),

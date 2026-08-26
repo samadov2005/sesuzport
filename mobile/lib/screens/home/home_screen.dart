@@ -36,13 +36,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadData,
           color: AppColors.primaryLight,
-          backgroundColor: AppColors.surface,
+          backgroundColor: c.surface,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -56,17 +58,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Xush kelibsiz! 👋',
-                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 13, color: c.textSecondary),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           _user?.fullName ?? 'Iste\'molchi',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: c.textPrimary,
                           ),
                         ),
                       ],
@@ -74,9 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.primary.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.4)),
+                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
@@ -84,10 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 6),
                           Text(
                             '${_user?.cashbackBalance.toStringAsFixed(0) ?? '0'} ball',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: c.textPrimary,
                             ),
                           ),
                         ],
@@ -112,8 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4),
-                          blurRadius: 20,
+                          color: AppColors.primary.withOpacity(0.35),
+                          blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
                       ],
@@ -171,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     _buildStatCard(
+                      c: c,
                       title: 'Murojaatlarim',
                       value: '${_user?.totalComplaints ?? 0}',
                       icon: Icons.assignment_outlined,
@@ -178,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     _buildStatCard(
+                      c: c,
                       title: 'Hal qilingan',
                       value: '${_user?.resolvedComplaints ?? 0}',
                       icon: Icons.check_circle_outline,
@@ -190,16 +194,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Section Title: Safe Stores
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Text(
                       'Xavfsiz do\'konlar (Yashil reyting)',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: c.textPrimary,
                       ),
                     ),
-                    Text(
+                    const Text(
                       'Barchasi →',
                       style: TextStyle(fontSize: 12, color: AppColors.primaryLight, fontWeight: FontWeight.w600),
                     ),
@@ -212,16 +216,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: c.surface,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: c.surfaceLight),
                     ),
-                    child: const Center(
-                      child: Text('Do\'konlar ro\'yxati yangilanmoqda...', style: TextStyle(color: AppColors.textMuted)),
+                    child: Center(
+                      child: Text('Do\'konlar ro\'yxati yangilanmoqda...', style: TextStyle(color: c.textMuted)),
                     ),
                   )
                 else
                   Column(
-                    children: _safeStores.map((store) => _buildStoreItem(store)).toList(),
+                    children: _safeStores.map((store) => _buildStoreItem(store, c)).toList(),
                   ),
               ],
             ),
@@ -232,6 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStatCard({
+    required AppThemeColors c,
     required String title,
     required String value,
     required IconData icon,
@@ -241,9 +247,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: c.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.surfaceLight),
+          border: Border.all(color: c.surfaceLight),
+          boxShadow: c.cardShadow,
         ),
         child: Row(
           children: [
@@ -265,14 +272,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: c.textPrimary),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 11, color: c.textSecondary),
                   ),
                 ],
               ),
@@ -283,14 +290,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStoreItem(StoreModel store) {
+  Widget _buildStoreItem(StoreModel store, AppThemeColors c) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceLight),
+        border: Border.all(color: c.surfaceLight),
+        boxShadow: c.cardShadow,
       ),
       child: Row(
         children: [
@@ -312,14 +320,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   store.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: c.textPrimary),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   store.address,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 11, color: c.textSecondary),
                 ),
               ],
             ),

@@ -16,14 +16,14 @@ class AppColors {
   static const Color darkTextMuted = Color(0xFF64748B);   // Slate 500
 
   // Light Theme Palette
-  static const Color lightBackground = Color(0xFFF8FAFC); // Slate 50
+  static const Color lightBackground = Color(0xFFF1F5F9); // Slate 100
   static const Color lightSurface = Color(0xFFFFFFFF);    // Pure White
   static const Color lightSurfaceLight = Color(0xFFE2E8F0);// Slate 200
   static const Color lightTextPrimary = Color(0xFF0F172A); // Slate 900
   static const Color lightTextSecondary = Color(0xFF475569);// Slate 600
   static const Color lightTextMuted = Color(0xFF94A3B8);  // Slate 400
 
-  // Fallback / Shared
+  // Fallback defaults
   static const Color background = Color(0xFF0F172A);
   static const Color surface = Color(0xFF1E293B);
   static const Color surfaceLight = Color(0xFF334155);
@@ -50,10 +50,31 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+}
 
-  static const LinearGradient cardGradient = LinearGradient(
-    colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+class AppThemeColors {
+  final bool isDark;
+  const AppThemeColors(this.isDark);
+
+  Color get background => isDark ? AppColors.darkBackground : AppColors.lightBackground;
+  Color get surface => isDark ? AppColors.darkSurface : AppColors.lightSurface;
+  Color get surfaceLight => isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight;
+  Color get textPrimary => isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+  Color get textSecondary => isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+  Color get textMuted => isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
+  List<BoxShadow> get cardShadow => isDark
+      ? []
+      : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ];
+}
+
+extension BuildContextTheme on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  AppThemeColors get colors => AppThemeColors(isDark);
 }

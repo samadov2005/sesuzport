@@ -46,37 +46,39 @@ class _ComplaintsListScreenState extends State<ComplaintsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Mening murojaatlarim',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
         ),
       ),
       body: RefreshIndicator(
         onRefresh: _loadComplaints,
         color: AppColors.primaryLight,
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
             : _complaints.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.inbox_outlined, size: 64, color: AppColors.textMuted),
-                        SizedBox(height: 12),
+                      children: [
+                        Icon(Icons.inbox_outlined, size: 64, color: c.textMuted),
+                        const SizedBox(height: 12),
                         Text(
                           'Hozircha murojaatlar yo\'q',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: c.textSecondary),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Sifatsiz mahsulot topsangiz, kamera orqali yuboring.',
-                          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          style: TextStyle(fontSize: 12, color: c.textMuted),
                         ),
                       ],
                     ),
@@ -85,16 +87,17 @@ class _ComplaintsListScreenState extends State<ComplaintsListScreen> {
                     padding: const EdgeInsets.all(16),
                     itemCount: _complaints.length,
                     itemBuilder: (context, index) {
-                      final c = _complaints[index];
-                      final statusColor = _getStatusColor(c.status);
+                      final item = _complaints[index];
+                      final statusColor = _getStatusColor(item.status);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 14),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: c.surface,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.surfaceLight),
+                          border: Border.all(color: c.surfaceLight),
+                          boxShadow: c.cardShadow,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,22 +107,22 @@ class _ComplaintsListScreenState extends State<ComplaintsListScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  c.ticketId,
-                                  style: const TextStyle(
+                                  item.ticketId,
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                    color: c.textPrimary,
                                   ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: statusColor.withOpacity(0.2),
+                                    color: statusColor.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: statusColor.withOpacity(0.5)),
+                                    border: Border.all(color: statusColor.withOpacity(0.4)),
                                   ),
                                   child: Text(
-                                    c.statusDisplay,
+                                    item.statusDisplay,
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
@@ -133,17 +136,17 @@ class _ComplaintsListScreenState extends State<ComplaintsListScreen> {
 
                             // Description
                             Text(
-                              c.description,
-                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.3),
+                              item.description,
+                              style: TextStyle(fontSize: 13, color: c.textSecondary, height: 1.3),
                             ),
                             const SizedBox(height: 12),
 
                             // Moderation Comment if exists
-                            if (c.moderationComment.isNotEmpty) ...[
+                            if (item.moderationComment.isNotEmpty) ...[
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: AppColors.background,
+                                  color: c.background,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Row(
@@ -153,8 +156,8 @@ class _ComplaintsListScreenState extends State<ComplaintsListScreen> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Inspektor xulosasi: ${c.moderationComment}',
-                                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        'Inspektor xulosasi: ${item.moderationComment}',
+                                        style: TextStyle(fontSize: 11, color: c.textSecondary),
                                       ),
                                     ),
                                   ],
@@ -169,21 +172,21 @@ class _ComplaintsListScreenState extends State<ComplaintsListScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.access_time, size: 13, color: AppColors.textMuted),
+                                    Icon(Icons.access_time, size: 13, color: c.textMuted),
                                     const SizedBox(width: 4),
                                     Text(
-                                      c.createdAt,
-                                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                      item.createdAt,
+                                      style: TextStyle(fontSize: 11, color: c.textMuted),
                                     ),
                                   ],
                                 ),
                                 Row(
                                   children: [
-                                    const Icon(Icons.location_on_outlined, size: 13, color: AppColors.textMuted),
+                                    Icon(Icons.location_on_outlined, size: 13, color: c.textMuted),
                                     const SizedBox(width: 2),
                                     Text(
-                                      '${c.latitude.toStringAsFixed(3)}, ${c.longitude.toStringAsFixed(3)}',
-                                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                      '${item.latitude.toStringAsFixed(3)}, ${item.longitude.toStringAsFixed(3)}',
+                                      style: TextStyle(fontSize: 11, color: c.textMuted),
                                     ),
                                   ],
                                 ),

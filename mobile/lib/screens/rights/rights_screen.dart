@@ -30,23 +30,25 @@ class _RightsScreenState extends State<RightsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Iste\'molchi Huquqlari',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.textPrimary),
         ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
           : _rights.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'Huquqlar ro\'yxati yangilanmoqda...',
-                    style: TextStyle(color: AppColors.textMuted),
+                    style: TextStyle(color: c.textMuted),
                   ),
                 )
               : ListView.builder(
@@ -58,22 +60,23 @@ class _RightsScreenState extends State<RightsScreen> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.surfaceLight),
+                        border: Border.all(color: c.surfaceLight),
+                        boxShadow: c.cardShadow,
                       ),
                       child: Theme(
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           iconColor: AppColors.primaryLight,
-                          collapsedIconColor: AppColors.textMuted,
+                          collapsedIconColor: c.textMuted,
                           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                           title: Text(
                             item['title'] ?? '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: c.textPrimary,
                             ),
                           ),
                           subtitle: Padding(
@@ -88,9 +91,9 @@ class _RightsScreenState extends State<RightsScreen> {
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               child: Text(
                                 item['content'] ?? '',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: AppColors.textSecondary,
+                                  color: c.textSecondary,
                                   height: 1.4,
                                 ),
                               ),
