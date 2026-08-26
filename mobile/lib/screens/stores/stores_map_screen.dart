@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_colors.dart';
 import '../../models/store_model.dart';
@@ -15,12 +16,39 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
   List<StoreModel> _stores = [];
   String? _selectedStatus;
   final _searchController = TextEditingController();
+  double? _userLat;
+  double? _userLng;
+  bool _isGettingLocation = false;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStores();
+    _getUserLocationAndLoadStores();
+  }
+
+  Future<void> _getUserLocationAndLoadStores() async {
+    setState(() => _isGettingLocation = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (serviceEnabled) {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+          Position position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 5),
+          );
+          _userLat = position.latitude;
+          _userLng = position.longitude;
+        }
+      }
+    } catch (_) {}
+
+    setState(() => _isGettingLocation = false);
+    await _loadStores();
   }
 
   Future<void> _loadStores() async {
@@ -28,6 +56,8 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
     final list = await ApiService.getStores(
       status: _selectedStatus,
       query: _searchController.text.trim(),
+      lat: _userLat,
+      lng: _userLng,
     );
     setState(() {
       _stores = list;
@@ -72,29 +102,48 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final borderColor = isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: surfaceColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Do\'konlar va Xavfsizlik Reytingi',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Joylashuvni yangilash',
+            icon: _isGettingLocation
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryLight),
+                  )
+                : const Icon(Icons.my_location_rounded, color: AppColors.primaryLight),
+            onPressed: _getUserLocationAndLoadStores,
+          ),
+        ],
       ),
       body: Column(
         children: [
           // Search & Filter Header
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppColors.surface,
+            color: surfaceColor,
             child: Column(
               children: [
                 // Search Input
                 TextField(
                   controller: _searchController,
                   onSubmitted: (_) => _loadStores(),
-                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                  style: TextStyle(color: textPrimary, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Do\'kon nomi yoki manzil bo\'yicha qidiruv...',
                     hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
@@ -109,7 +158,7 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
                           )
                         : null,
                     filled: true,
-                    fillColor: AppColors.background,
+                    fillColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
@@ -121,13 +170,13 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildFilterChip(null, 'Barchasi'),
+                      _buildFilterChip(null, 'Barchasi', isDark),
                       const SizedBox(width: 8),
-                      _buildFilterChip('GREEN', '🟢 Yashil (Xavfsiz)'),
+                      _buildFilterChip('GREEN', '🟢 Yashil (Xavfsiz)', isDark),
                       const SizedBox(width: 8),
-                      _buildFilterChip('YELLOW', '🟡 Sariq (Diqqat)'),
+                      _buildFilterChip('YELLOW', '🟡 Sariq (Diqqat)', isDark),
                       const SizedBox(width: 8),
-                      _buildFilterChip('RED', '🔴 Qizil (Xavfli)'),
+                      _buildFilterChip('RED', '🔴 Qizil (Xavfli)', isDark),
                     ],
                   ),
                 ),
@@ -135,12 +184,30 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
             ),
           ),
 
+          // GPS Info Banner if Location Detected
+          if (_userLat != null && _userLng != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: AppColors.primary.withOpacity(0.12),
+              child: Row(
+                children: [
+                  const Icon(Icons.near_me_rounded, color: AppColors.primaryLight, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Do\'konlar sizga eng yaqin masofadan saralandi',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+                  ),
+                ],
+              ),
+            ),
+
           // Stores List
           Expanded(
             child: RefreshIndicator(
-              onRefresh: _loadStores,
+              onRefresh: _getUserLocationAndLoadStores,
               color: AppColors.primaryLight,
-              backgroundColor: AppColors.surface,
+              backgroundColor: surfaceColor,
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator(color: AppColors.primaryLight))
                   : _stores.isEmpty
@@ -161,33 +228,74 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppColors.surface,
+                                color: surfaceColor,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.surfaceLight),
+                                border: Border.all(color: borderColor),
+                                boxShadow: [
+                                  if (!isDark)
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                ],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Name and Rating Row
+                                  // Name, Rating and Distance
                                   Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Text(
-                                          store.name,
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
-                                          ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              store.name,
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: textPrimary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            if (store.distanceKm != null)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary.withOpacity(0.15),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(Icons.directions_walk_rounded, color: AppColors.primaryLight, size: 12),
+                                                    const SizedBox(width: 3),
+                                                    Text(
+                                                      store.distanceKm! < 1.0
+                                                          ? '${(store.distanceKm! * 1000).toInt()} m yaqinlikda'
+                                                          : '${store.distanceKm!.toStringAsFixed(1)} km yaqinlikda',
+                                                      style: const TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: AppColors.primaryLight,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: safetyColor.withOpacity(0.2),
+                                          color: safetyColor.withOpacity(0.15),
                                           borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: safetyColor.withOpacity(0.5)),
+                                          border: Border.all(color: safetyColor.withOpacity(0.4)),
                                         ),
                                         child: Text(
                                           store.safetyStatusDisplay,
@@ -200,12 +308,21 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 8),
 
                                   // Address
-                                  Text(
-                                    store.address,
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          store.address,
+                                          style: TextStyle(fontSize: 12, color: textSecondary),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 12),
 
@@ -215,8 +332,8 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
                                       if (store.latitude != null && store.longitude != null)
                                         OutlinedButton.icon(
                                           onPressed: () => _openMap(store.latitude, store.longitude),
-                                          icon: const Icon(Icons.map_outlined, size: 16, color: AppColors.primaryLight),
-                                          label: const Text('Xaritada ochish', style: TextStyle(fontSize: 12, color: AppColors.primaryLight)),
+                                          icon: const Icon(Icons.directions_rounded, size: 16, color: AppColors.primaryLight),
+                                          label: const Text('Marshrut / Xarita', style: TextStyle(fontSize: 12, color: AppColors.primaryLight, fontWeight: FontWeight.bold)),
                                           style: OutlinedButton.styleFrom(
                                             side: BorderSide(color: AppColors.primaryLight.withOpacity(0.5)),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -245,7 +362,7 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
     );
   }
 
-  Widget _buildFilterChip(String? status, String label) {
+  Widget _buildFilterChip(String? status, String label, bool isDark) {
     final isSelected = _selectedStatus == status;
     return ChoiceChip(
       label: Text(label),
@@ -257,9 +374,9 @@ class _StoresMapScreenState extends State<StoresMapScreen> {
         }
       },
       selectedColor: AppColors.primary,
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.textSecondary,
+        color: isSelected ? Colors.white : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
