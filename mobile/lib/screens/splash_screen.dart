@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_strings.dart';
 import '../services/api_service.dart';
 import 'auth/login_screen.dart';
 import 'main_navigation_screen.dart';
@@ -37,16 +38,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2));
-    final token = await ApiService.getToken();
+    await Future.delayed(const Duration(milliseconds: 1600));
+
+    // Verify token validity with backend
+    final user = await ApiService.getProfile();
 
     if (!mounted) return;
 
-    if (token != null && token.isNotEmpty) {
+    if (user != null) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
       );
     } else {
+      // If token is invalid or expired, clear it and show Login
+      await ApiService.clearToken();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
@@ -61,8 +66,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -73,8 +80,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               children: [
                 // Shield Logo Icon
                 Container(
-                  width: 110,
-                  height: 110,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
                     shape: BoxShape.circle,
@@ -89,32 +96,33 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: const Center(
                     child: Icon(
                       Icons.shield_outlined,
-                      size: 60,
+                      size: 54,
                       color: Colors.white,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // App Title
-                const Text(
-                  'SESPORT',
+                Text(
+                  AppStrings.get('app_name'),
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 4,
-                    color: AppColors.textPrimary,
+                    color: c.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
 
                 // Subtitle
-                const Text(
-                  'Sanitariya xavfsizligi va iste\'molchi himoyasi',
+                Text(
+                  AppStrings.get('app_subtitle'),
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: c.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 48),

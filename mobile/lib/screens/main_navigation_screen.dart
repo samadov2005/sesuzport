@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/theme_notifier.dart';
+import '../constants/app_strings.dart';
 import 'home/home_screen.dart';
 import 'stores/stores_map_screen.dart';
 import 'complaint/complaints_list_screen.dart';
@@ -154,6 +155,64 @@ class _MoreMenuScreenState extends State<_MoreMenuScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // Language Switcher Card
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.language_rounded, color: AppColors.primaryLight, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppStrings.get('language'),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'UZ / RU / EN',
+                          style: TextStyle(fontSize: 11, color: textSecondary),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildLangPill('uz', 'UZ'),
+                      _buildLangPill('ru', 'RU'),
+                      _buildLangPill('en', 'EN'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // Theme Switcher Card (Yorug' / Tungi rejim)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -334,6 +393,32 @@ class _MoreMenuScreenState extends State<_MoreMenuScreen> {
         title: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary)),
         trailing: const Icon(Icons.arrow_forward_ios, color: AppColors.textMuted, size: 14),
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildLangPill(String code, String label) {
+    final isSelected = AppLocaleNotifier.instance.lang == code;
+    return InkWell(
+      onTap: () {
+        AppLocaleNotifier.instance.setLanguage(code);
+        setState(() {});
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : AppColors.textMuted,
+          ),
+        ),
       ),
     );
   }

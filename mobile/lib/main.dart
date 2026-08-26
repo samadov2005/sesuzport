@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'constants/app_colors.dart';
 import 'constants/theme_notifier.dart';
+import 'constants/app_strings.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ThemeNotifier.instance.init();
+  await AppLocaleNotifier.instance.init();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -24,7 +26,10 @@ class SesportApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: ThemeNotifier.instance,
+      animation: Listenable.merge([
+        ThemeNotifier.instance,
+        AppLocaleNotifier.instance,
+      ]),
       builder: (context, _) {
         return MaterialApp(
           title: 'SESPORT',
