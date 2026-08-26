@@ -30,6 +30,7 @@ urlpatterns = [
     path('admin/', sesport_admin.urls),
     path('camera/', camera_view, name='live_camera'),
     path('api/upload-camera/', upload_camera_photo, name='upload_camera_photo'),
+    path('api/v1/', include('apps.api.urls')),
 ]
 
 if settings.DEBUG:
