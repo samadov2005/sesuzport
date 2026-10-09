@@ -68,9 +68,10 @@ if _db_url:
     # sxemasini tanimay qolardi va natijada konteyner JIMGINA SQLite'ga
     # tushib ketardi — ya'ni har bir deploy'da ma'lumotlar yo'qolardi.
     # Endi noto'g'ri URL jim qolmasdan, xato bilan to'xtatadi.
-    from urllib.parse import urlparse, unquote
+    from urllib.parse import urlparse, unquote, parse_qs
 
     _parsed = urlparse(_db_url)
+    _query_params = parse_qs(_parsed.query)
 
     if _parsed.scheme not in ('postgres', 'postgresql'):
         raise ValueError(
@@ -84,6 +85,10 @@ if _db_url:
             "Format: postgresql://user:password@host:5432/dbname"
         )
 
+    _db_options = {'connect_timeout': 10}
+    if 'sslmode' in _query_params:
+        _db_options['sslmode'] = _query_params['sslmode'][0]
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -96,7 +101,7 @@ if _db_url:
             'PORT': str(_parsed.port or 5432),
             'CONN_MAX_AGE': 600,
             'CONN_HEALTH_CHECKS': True,
-            'OPTIONS': {'connect_timeout': 10},
+            'OPTIONS': _db_options,
         }
     }
 elif os.environ.get('POSTGRES_HOST', '').strip():
