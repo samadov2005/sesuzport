@@ -1,9 +1,11 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import ConsumerRight
 
 @admin.register(ConsumerRight)
 class ConsumerRightAdmin(admin.ModelAdmin):
     list_display = ['order', 'title', 'category_badge', 'is_active', 'updated_at']
+    list_display_links = ['title']
     list_editable = ['order', 'is_active']
     list_filter = ['category', 'is_active']
     search_fields = ['title', 'content', 'category']

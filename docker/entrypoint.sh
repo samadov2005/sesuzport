@@ -19,15 +19,21 @@ log() { echo "[entrypoint] $*"; }
 
 # ── 1. DB ni kutish ────────────────────────────────────────
 python - <<'PY'
-import os, re, socket, sys, time
+import os, socket, sys, time
+from urllib.parse import urlparse
 
-url = os.environ.get("DATABASE_URL", "")
-host = os.environ.get("POSTGRES_HOST", "")
+url = os.environ.get("DATABASE_URL", "").strip()
+host = os.environ.get("POSTGRES_HOST", "").strip()
 port = os.environ.get("POSTGRES_PORT", "5432")
 
-m = re.match(r"postgres(?:ql)?://[^:/@]+:[^@]*@([^:/]+):(\d+)/", url)
-if m:
-    host, port = m.group(1), m.group(2)
+if url:
+    try:
+        p = urlparse(url)
+        if p.hostname:
+            host = p.hostname
+            port = p.port or 5432
+    except Exception:
+        pass
 
 if not host:
     print("[entrypoint] SQLite rejimi — DB kutish o'tkazib yuborildi")
