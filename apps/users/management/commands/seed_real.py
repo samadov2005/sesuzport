@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 SESPORT Real Seed Data — Haqiqiy Uzbekiston ma'lumotlari.
 

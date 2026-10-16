@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 import os
 from dotenv import load_dotenv
@@ -14,7 +15,7 @@ class BotConfig:
     archive_channel_id: str | None
 
 def get_bot_config() -> BotConfig:
-    token = os.getenv('BOT_TOKEN')
+    token = os.getenv('BOT_TOKEN') or os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:
         raise ValueError('BOT_TOKEN environment variable is required')
     raw_webapp_url = (os.getenv('WEBAPP_URL') or os.getenv('RENDER_EXTERNAL_URL') or 'https://sesuzport.onrender.com').strip().rstrip('/')

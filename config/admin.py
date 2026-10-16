@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 SESPORT Custom Django AdminSite.
 Overrides the default admin index to inject dashboard statistics.

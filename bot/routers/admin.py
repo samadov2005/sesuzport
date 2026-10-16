@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import asyncio
 
@@ -161,10 +162,11 @@ async def admin_view_complaint(callback: CallbackQuery) -> None:
         return
 
     status_str = format_complaint_status(c.status)
+    username_str = c.user.username or "yo'q"
     caption = (
         f"🎫 <b>Murojaat:</b> <code>{c.ticket_id}</code>\n"
         f"📊 <b>Holat:</b> {status_str}\n"
-        f"👤 <b>Foydalanuvchi:</b> {c.user.full_name} (@{c.user.username or 'yo\'q'})\n"
+        f"👤 <b>Foydalanuvchi:</b> {c.user.full_name} (@{username_str})\n"
         f"🆔 <b>User ID:</b> <code>{c.user.telegram_id}</code>\n"
         f"📅 <b>Sana:</b> {format_date(c.created_at)}\n\n"
         f"📝 <b>Tavsif:</b>\n{c.description}\n\n"
@@ -360,8 +362,9 @@ async def admin_search_process(message: Message, state: FSMContext) -> None:
     if users:
         lines.append("👤 <b>Topilgan foydalanuvchilar:</b>")
         for u in users:
+            u_name = u.username or "yo'q"
             lines.append(
-                f"• <b>{u.full_name}</b> (@{u.username or 'yo\'q'})\n"
+                f"• <b>{u.full_name}</b> (@{u_name})\n"
                 f"  ID: <code>{u.telegram_id}</code> | Rol: <b>{u.role}</b>\n"
                 f"  Qo'shilgan: {format_date(u.created_at)}\n"
             )
@@ -382,10 +385,11 @@ async def admin_quick_view(message: Message) -> None:
         await message.answer("Murojaat topilmadi.")
         return
 
+    u_name = c.user.username or "yo'q"
     caption = (
         f"🎫 <b>Murojaat:</b> <code>{c.ticket_id}</code>\n"
         f"📊 <b>Holat:</b> {format_complaint_status(c.status)}\n"
-        f"👤 <b>Foydalanuvchi:</b> {c.user.full_name} (@{c.user.username or 'yo\'q'})\n"
+        f"👤 <b>Foydalanuvchi:</b> {c.user.full_name} (@{u_name})\n"
         f"🆔 <b>User ID:</b> <code>{c.user.telegram_id}</code>\n"
         f"📅 <b>Sana:</b> {format_date(c.created_at)}\n\n"
         f"📝 <b>Tavsif:</b>\n{c.description}"

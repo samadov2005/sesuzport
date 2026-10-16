@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Callable, Dict, Any, Awaitable
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Update

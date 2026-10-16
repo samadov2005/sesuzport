@@ -100,16 +100,20 @@ PY
 fi
 
 # ── 5. Telegram Botni fonda ishga tushirish (agar web rolida bo'lsa) ────────
-if [ -n "$BOT_TOKEN" ] && [ "${RUN_BOT:-true}" = "true" ] && [ "$1" = "gunicorn" ]; then
-    log "Telegram bot monitoring drayveri ishga tushirilmoqda..."
-    (
-        while true; do
-            log "[bot supervisor] Telegram Bot ishga tushirildi..."
-            python bot/main.py || true
-            log "[bot supervisor] Telegram Bot to'xtadi (crash/restart). 3 soniyada qayta ishga tushadi..."
-            sleep 3
-        done
-    ) &
+if [ "${USE_WEBHOOK:-false}" = "true" ]; then
+    log "Webhook rejimi tanlangan — Telegram yangilanishlari /bot/webhook/ orqali qabul qilinadi"
+elif [ -n "$BOT_TOKEN" ] || [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+    if [ "${RUN_BOT:-true}" = "true" ]; then
+        log "Telegram bot monitoring drayveri ishga tushirilmoqda..."
+        (
+            while true; do
+                log "[bot supervisor] Telegram Bot ishga tushirildi..."
+                python bot/main.py || true
+                log "[bot supervisor] Telegram Bot to'xtadi (crash/restart). 3 soniyada qayta ishga tushadi..."
+                sleep 3
+            done
+        ) &
+    fi
 fi
 
 # ── 6. Asosiy jarayon ──────────────────────────────────────

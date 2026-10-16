@@ -1,3 +1,4 @@
+from __future__ import annotations
 def format_complaint_status(status: str) -> str:
     statuses = {
         'PENDING': '⏳ Moderatsiya kutilmoqda',

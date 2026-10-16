@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .base import *  # noqa: F403
 import os
 
@@ -64,7 +65,7 @@ SECURE_HSTS_PRELOAD = ENABLE_HTTPS
 # Docker healthcheck konteyner ichida http:// orqali keladi — uni
 # https redirectdan ozod qilamiz, aks holda ENABLE_HTTPS=true bo'lganda
 # curl 301 oladi va konteyner "unhealthy" bo'lib qoladi.
-SECURE_REDIRECT_EXEMPT = [r'^healthz/?$', r'^health/?$']
+SECURE_REDIRECT_EXEMPT = [r'^healthz/?$', r'^health/?$', r'^bot/webhook/?$']
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'

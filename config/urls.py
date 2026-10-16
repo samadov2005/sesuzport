@@ -1,3 +1,4 @@
+from __future__ import annotations
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.views.generic import RedirectView
 # Import custom admin site and auto-register all models to it
 from config.admin import sesport_admin
 from apps.complaints.views import camera_view, upload_camera_photo
+from bot.views import bot_webhook_view, bot_status_view, bot_set_webhook_view, bot_delete_webhook_view
 
 # Auto-discover and register all models from the default admin into sesport_admin
 admin.autodiscover()
@@ -31,6 +33,10 @@ urlpatterns = [
     path('camera/', camera_view, name='live_camera'),
     path('api/upload-camera/', upload_camera_photo, name='upload_camera_photo'),
     path('api/v1/', include('apps.api.urls')),
+    path('bot/webhook/', bot_webhook_view, name='bot_webhook'),
+    path('bot/status/', bot_status_view, name='bot_status'),
+    path('bot/set-webhook/', bot_set_webhook_view, name='bot_set_webhook'),
+    path('bot/delete-webhook/', bot_delete_webhook_view, name='bot_delete_webhook'),
 ]
 
 if settings.DEBUG:

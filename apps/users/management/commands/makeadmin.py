@@ -1,3 +1,4 @@
+from __future__ import annotations
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from apps.users.models import TelegramUser, UserRole
@@ -40,9 +41,10 @@ class Command(BaseCommand):
             # If user not found, list recent users to help
             recent = TelegramUser.objects.order_by('-created_at')[:5]
             recent_list = ", ".join([f"{u.full_name} ({u.phone_number or u.username})" for u in recent])
+            empty_msg = "Bazada foydalanuvchilar yo'q. Avval ilovadan ro'yxatdan o'ting."
             self.stdout.write(self.style.WARNING(
                 f"[!] '{ident}' bo'yicha foydalanuvchi topilmadi.\n"
-                f"So'nggi foydalanuvchilar: {recent_list or 'Bazada foydalanuvchilar yo\'q. Avval ilovadan ro\'yxatdan o\'ting.'}"
+                f"So'nggi foydalanuvchilar: {recent_list or empty_msg}"
             ))
             return
 

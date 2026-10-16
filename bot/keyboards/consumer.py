@@ -1,3 +1,4 @@
+from __future__ import annotations
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from bot.utils.i18n import get_btn
 

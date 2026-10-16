@@ -1,3 +1,4 @@
+from __future__ import annotations
 from decimal import Decimal
 
 from asgiref.sync import sync_to_async

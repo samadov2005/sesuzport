@@ -1,3 +1,4 @@
+from __future__ import annotations
 from aiogram import Router, F
 from aiogram.types import Message
 from bot.keyboards.consumer import consumer_keyboard

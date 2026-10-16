@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Callable, Dict, Any, Awaitable
 import time
 from aiogram import BaseMiddleware

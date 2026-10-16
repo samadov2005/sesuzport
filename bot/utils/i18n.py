@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Internationalization (i18n) module for SESPORT Telegram Bot.
 Supports Uzbek (uz) and Russian (ru).

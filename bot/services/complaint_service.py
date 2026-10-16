@@ -1,3 +1,4 @@
+from __future__ import annotations
 from asgiref.sync import sync_to_async
 from apps.complaints.models import Complaint, ComplaintStatus, ComplaintStatusHistory
 from apps.users.models import TelegramUser

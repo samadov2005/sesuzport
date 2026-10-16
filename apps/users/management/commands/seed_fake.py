@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 SESPORT Fake Seed Data — Faker bilan generatsiya qilingan test ma'lumotlari.
 

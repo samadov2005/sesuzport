@@ -1,3 +1,4 @@
+from __future__ import annotations
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from bot.keyboards.common import rights_list_keyboard
