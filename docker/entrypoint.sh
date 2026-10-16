@@ -101,8 +101,15 @@ fi
 
 # ── 5. Telegram Botni fonda ishga tushirish (agar web rolida bo'lsa) ────────
 if [ -n "$BOT_TOKEN" ] && [ "${RUN_BOT:-true}" = "true" ] && [ "$1" = "gunicorn" ]; then
-    log "Telegram bot fonda ishga tushirilmoqda..."
-    python bot/main.py &
+    log "Telegram bot monitoring drayveri ishga tushirilmoqda..."
+    (
+        while true; do
+            log "[bot supervisor] Telegram Bot ishga tushirildi..."
+            python bot/main.py || true
+            log "[bot supervisor] Telegram Bot to'xtadi (crash/restart). 3 soniyada qayta ishga tushadi..."
+            sleep 3
+        done
+    ) &
 fi
 
 # ── 6. Asosiy jarayon ──────────────────────────────────────
