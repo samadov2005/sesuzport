@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import sys
+import aiohttp
 
 # Ensure project root is at the beginning of sys.path before any imports
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -42,6 +43,24 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+
+async def keep_alive() -> None:
+    """Render.com 15 daqiqada uxlab qolmasligi uchun har 10 daqiqada /healthz/ ga so'rov yuboradi"""
+    base_url = os.getenv('WEBAPP_URL', os.getenv('RENDER_EXTERNAL_URL', 'https://sesuzport.onrender.com'))
+    if not base_url.startswith('http'):
+        base_url = f"https://{base_url}"
+    ping_url = f"{base_url.rstrip('/')}/healthz/"
+    await asyncio.sleep(60)  # Birinchi daqiqadan so'ng boshlaydi
+    logger.info(f"Keep-alive self-ping vazifasi boshlandi: {ping_url}")
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(ping_url, timeout=15) as resp:
+                    logger.info(f"Keep-alive ping yuborildi: {ping_url} (status: {resp.status})")
+        except Exception as e:
+            logger.debug(f"Keep-alive ping xatosi: {e}")
+        await asyncio.sleep(600)  # Har 10 daqiqada
 
 
 async def main() -> None:
@@ -93,6 +112,8 @@ async def main() -> None:
     try:
         # Delete any existing webhook
         await bot.delete_webhook(drop_pending_updates=True)
+        # Fon keep-alive vazifasini ishga tushirish (Render uxlamasligi uchun)
+        asyncio.create_task(keep_alive())
         # Start polling
         await dp.start_polling(bot)
     finally:
